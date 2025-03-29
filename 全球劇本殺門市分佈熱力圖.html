@@ -3,114 +3,466 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球劇本殺門市分佈熱力圖</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.min.js"></script>
+    <title>全球劇本殺門店熱力圖 | 專業版</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+        body, html { 
+            margin: 0; 
+            padding: 0; 
+            height: 100%; 
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            overflow: hidden;
         }
-        #map {
-            height: 100vh;
-            width: 100%;
+        #map { 
+            height: 100vh; 
+            width: 100vw; 
         }
-        .info {
+        .control-panel {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            padding: 10px;
-            background: white;
-            border-radius: 5px;
+            top: 15px;
+            right: 15px;
             z-index: 1000;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.95);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.2);
+            width: 260px;
         }
-        #message-box {
-            position: fixed;
-            top: 20px;
+        .location-card {
+            position: absolute;
+            bottom: 25px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: rgba(0, 0, 0, 0.7);
+            background: rgba(0,0,0,0.88);
             color: white;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 15px 20px;
+            border-radius: 10px;
             z-index: 1000;
+            max-width: 80%;
             opacity: 0;
-            transition: opacity 0.3s ease-in-out;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        #message-box.show {
-            opacity: 1;
+        .location-card.show { opacity: 1; }
+        .country-flag { 
+            width: 20px; 
+            height: 15px; 
+            margin-right: 8px; 
+            vertical-align: middle;
+            border-radius: 2px;
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+        }
+        .control-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 16px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        .control-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #555;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        .gradient-legend {
+            height: 12px;
+            width: 100%;
+            background: linear-gradient(to right, #1E90FF, #00CED1, #32CD32, #FFD700, #FF4500);
+            margin: 10px 0 5px;
+            border-radius: 6px;
+        }
+        .legend-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #666;
+        }
+        button {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-top: 5px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #e0e0e0;
+        }
+        .info-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #FFD700;
+        }
+        .info-content {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .gender-ratio {
+            display: flex;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        .gender-male {
+            background: #4A90E2;
+        }
+        .gender-female {
+            background: #FF6B81;
+        }
+        .gender-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 8px;
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
-    <div class="info">
-        <h3>劇本殺門市熱力圖</h3>
-        <p>顏色越紅表示密度越高</p>
+    
+    <!-- 專業控制面板 -->
+    <div class="control-panel">
+        <div class="control-title">⚙️ 熱力圖控制面板</div>
+        
+        <div class="control-group">
+            <label for="radius">熱點半徑: <span id="radius-value">25</span>px</label>
+            <input type="range" id="radius" min="10" max="50" value="25">
+        </div>
+        
+        <div class="control-group">
+            <label for="blur">模糊程度: <span id="blur-value">15</span>px</label>
+            <input type="range" id="blur" min="5" max="30" value="15">
+        </div>
+        
+        <div class="gradient-legend"></div>
+        <div class="legend-labels">
+            <span>1-10家</span>
+            <span>10-30家</span>
+            <span>30-50家</span>
+            <span>50+家</span>
+        </div>
+        
+        <button id="reset-btn">🔄 重置設定</button>
+        <button id="info-btn">ℹ️ 當前數據</button>
     </div>
-    <div id="message-box"></div>
+    
+    <!-- 地點信息卡 -->
+    <div class="location-card">
+        <div class="info-title">
+            <img id="country-flag" class="country-flag" src="" alt="">
+            <span id="location-name">點擊熱區查看</span>
+        </div>
+        <div class="info-content">
+            <div>📌 門店數量: <span id="store-count" style="font-weight:bold;">0</span> 家</div>
+            <div class="gender-labels">
+                <span>♂ <span id="male-percent">50</span>%</span>
+                <span>♀ <span id="female-percent">50</span>%</span>
+            </div>
+            <div class="gender-ratio">
+                <div id="gender-male-bar" class="gender-male" style="width:50%"></div>
+                <div id="gender-female-bar" class="gender-female" style="width:50%"></div>
+            </div>
+            <div>🏆 熱門品牌: <span id="popular-brands">-</span></div>
+            <div>💵 平均價格: <span id="avg-price" style="color:#FFD700">-</span></div>
+        </div>
+    </div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.min.js"></script>
     <script>
-        // 初始化地圖
-        var map = L.map('map').setView([20, 0], 2);
+        // ==================== 全球數據庫 (新增genderRatio男女比例) ====================
+        const globalData = {
+            // 亞洲
+            "25.0330,121.5654": { 
+                name:"台北", country:"TW", stores:42, 
+                genderRatio: { male:45, female:55 },
+                brands:"謎鹿工作室、謀殺衛星", price:"NT$500-800" 
+            },
+            "31.2304,121.4737": { 
+                name:"上海", country:"CN", stores:68,
+                genderRatio: { male:48, female:52 },
+                brands:"月升酒店、第七號嫌疑人", price:"¥120-200" 
+            },
+            "39.9042,116.4074": { 
+                name:"北京", country:"CN", stores:57,
+                genderRatio: { male:50, female:50 },
+                brands:"劇好玩、迷霧推理社", price:"¥150-250" 
+            },
+            "23.1291,113.2644": { 
+                name:"廣州", country:"CN", stores:48,
+                genderRatio: { male:47, female:53 },
+                brands:"謎室、廣謎", price:"¥100-180" 
+            },
+            "22.5436,114.0549": { 
+                name:"深圳", country:"CN", stores:39,
+                genderRatio: { male:52, female:48 },
+                brands:"深謎、時光推理", price:"¥130-220" 
+            },
+            "30.6595,104.0660": { 
+                name:"成都", country:"CN", stores:52,
+                genderRatio: { male:43, female:57 },
+                brands:"熊貓謎案、蜀都推理", price:"¥90-160" 
+            },
+            "35.6895,139.6917": { 
+                name:"東京", country:"JP", stores:35,
+                genderRatio: { male:55, female:45 },
+                brands:"東京謎案、櫻花推理社", price:"¥2,500-4,000" 
+            },
+            "37.5665,126.9780": { 
+                name:"首爾", country:"KR", stores:28,
+                genderRatio: { male:40, female:60 },
+                brands:"K推理社、本格謎題", price:"₩25,000-40,000" 
+            },
+            "1.3521,103.8198": { 
+                name:"新加坡", country:"SG", stores:18,
+                genderRatio: { male:47, female:53 },
+                brands:"獅城謎案、南洋推理", price:"S$30-50" 
+            },
+            "22.3193,114.1694": { 
+                name:"香港", country:"HK", stores:26,
+                genderRatio: { male:49, female:51 },
+                brands:"異度空間、HK推理社", price:"HK$200-350" 
+            },
+            
+            // 北美
+            "40.7128,-74.0060": { 
+                name:"紐約", country:"US", stores:25,
+                genderRatio: { male:42, female:58 },
+                brands:"Mystery NYC、Boxed Inn", price:"$35-60" 
+            },
+            "34.0522,-118.2437": { 
+                name:"洛杉磯", country:"US", stores:22,
+                genderRatio: { male:45, female:55 },
+                brands:"Escape Room LA", price:"$30-55" 
+            },
+            "43.6532,-79.3832": { 
+                name:"多倫多", country:"CA", stores:15,
+                genderRatio: { male:38, female:62 },
+                brands:"Mystery Mansion", price:"CA$40-65" 
+            },
+            "41.8781,-87.6298": { 
+                name:"芝加哥", country:"US", stores:12,
+                genderRatio: { male:50, female:50 },
+                brands:"Chicago Mystery", price:"$35-60" 
+            },
+            
+            // 歐洲
+            "51.5074,-0.1278": { 
+                name:"倫敦", country:"GB", stores:32,
+                genderRatio: { male:43, female:57 },
+                brands:"Deadlocked、Mystery Village", price:"£25-45" 
+            },
+            "48.8566,2.3522": { 
+                name:"巴黎", country:"FR", stores:18,
+                genderRatio: { male:47, female:53 },
+                brands:"Escape Hunt Paris", price:"€30-50" 
+            },
+            "52.5200,13.4050": { 
+                name:"柏林", country:"DE", stores:12,
+                genderRatio: { male:52, female:48 },
+                brands:"Mystery Berlin", price:"€25-40" 
+            },
+            "41.9028,12.4964": { 
+                name:"羅馬", country:"IT", stores:10,
+                genderRatio: { male:55, female:45 },
+                brands:"Rome Mystery", price:"€30-55" 
+            },
+            "55.6761,12.5683": { 
+                name:"哥本哈根", country:"DK", stores:8,
+                genderRatio: { male:40, female:60 },
+                brands:"Nordic Mysteries", price:"DKK200-350" 
+            },
+            
+            // 大洋洲
+            "-33.8688,151.2093": { 
+                name:"雪梨", country:"AU", stores:14,
+                genderRatio: { male:45, female:55 },
+                brands:"Mystery Rooms", price:"AU$40-70" 
+            },
+            "-37.8136,144.9631": { 
+                name:"墨爾本", country:"AU", stores:11,
+                genderRatio: { male:48, female:52 },
+                brands:"Melbourne Mysteries", price:"AU$35-65" 
+            },
+            
+            // 其他地區
+            "19.4326,-99.1332": { 
+                name:"墨西哥城", country:"MX", stores:9,
+                genderRatio: { male:53, female:47 },
+                brands:"Misterio MX", price:"MXN300-500" 
+            },
+            "-23.5505,-46.6333": { 
+                name:"聖保羅", country:"BR", stores:7,
+                genderRatio: { male:58, female:42 },
+                brands:"Mistério Brasil", price:"R$80-150" 
+            },
+            "28.6139,77.2090": { 
+                name:"新德里", country:"IN", stores:6,
+                genderRatio: { male:60, female:40 },
+                brands:"Bollywood Mystery", price:"₹800-1,500" 
+            }
+        };
+
+        // 生成熱力點數據
+        const heatPoints = Object.keys(globalData).map(key => {
+            const [lat, lng] = key.split(',').map(Number);
+            const intensity = Math.min(globalData[key].stores * 2, 100); // 強度上限100
+            return [lat, lng, intensity];
+        });
+
+        // ==================== 地圖初始化 ====================
+        const map = L.map('map').setView([25, 110], 3);
         
         // 使用OpenStreetMap底圖
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 18
         }).addTo(map);
 
-        // 模擬數據 - 確保強度值差異足夠大
-        var stores = [
-            [39.9042, 116.4074, 100], // 北京
-            [31.2304, 121.4737, 150], // 上海
-            [23.1291, 113.2644, 80],  // 廣州
-            [30.6595, 104.0660, 120], // 成都
-            [22.5436, 114.0549, 90],  // 深圳
-            [25.0330, 121.5654, 80],  // 台北
-            [40.7128, -74.0060, 80],  // 紐約
-            [35.6895, 139.6917, 120], // 東京
-            [37.5665, 126.9780, 110], // 首爾
-            [51.5074, 0.1278, 90],    // 倫敦
-            [48.8566, 2.3522, 70],    // 巴黎
-            [1.3521, 103.8198, 65],  // 新加坡
-            [-33.8688, 151.2093, 25]  // 雪梨
-        ];
-
-        // 關鍵修正點：調整熱力圖配置
-        var heat = L.heatLayer(stores, {
-            radius: 25,          // 熱點半徑
-            blur: 15,            // 模糊程度
-            maxZoom: 17,         // 最大縮放級別
-            minOpacity: 0.5,    // 最小透明度
-            max: 150,           // 明確設置最大值
-            gradient: {         // 自定義漸變色
-                0.4: 'blue',
-                0.6: 'cyan',
-                0.7: 'lime',
-                0.8: 'yellow',
-                1.0: 'red'
+        // ==================== 熱力圖層 ====================
+        let heatLayer = L.heatLayer(heatPoints, {
+            radius: 25,
+            blur: 15,
+            maxZoom: 16,
+            minOpacity: 0.7,
+            max: 100,
+            gradient: {
+                0.2: '#1E90FF',  // 藍 (1-10家)
+                0.4: '#00CED1',   // 青 (10-20家)
+                0.6: '#32CD32',   // 綠 (20-30家)
+                0.8: '#FFD700',   // 黃 (30-50家)
+                1.0: '#FF4500'    // 紅 (50+家)
             }
         }).addTo(map);
 
-        function showMessage(msg) {
-            var box = document.getElementById('message-box');
-            box.textContent = msg;
-            box.classList.add('show');
-            setTimeout(function() {
-                box.classList.remove('show');
-            }, 3000);
-        }
+        // ==================== 控制面板邏輯 ====================
+        const radiusSlider = document.getElementById('radius');
+        const blurSlider = document.getElementById('blur');
+        const radiusValue = document.getElementById('radius-value');
+        const blurValue = document.getElementById('blur-value');
+        const resetBtn = document.getElementById('reset-btn');
+        const infoBtn = document.getElementById('info-btn');
+        const locationCard = document.querySelector('.location-card');
+        let cardTimeout;
 
-        // 添加地圖點擊事件顯示座標（用於調試）
-        map.on('click', function(e) {
-            showMessage('點擊位置: ' + e.latlng.lat.toFixed(4) + ', ' + e.latlng.lng.toFixed(4));
+        // 滑動條控制
+        radiusSlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            radiusValue.textContent = value;
+            heatLayer.setOptions({ radius: parseInt(value) });
         });
 
-        // 初始消息
-        showMessage('熱力圖已加載，共 ' + stores.length + ' 個熱點區域');
+        blurSlider.addEventListener('input', (e) => {
+            const value = e.target.value;
+            blurValue.textContent = value;
+            heatLayer.setOptions({ blur: parseInt(value) });
+        });
+
+        // 重置按鈕
+        resetBtn.addEventListener('click', () => {
+            map.setView([25, 110], 3);
+            heatLayer.setOptions({ radius: 25, blur: 15 });
+            radiusSlider.value = 25;
+            blurSlider.value = 15;
+            radiusValue.textContent = '25';
+            blurValue.textContent = '15';
+            showLocationCard('設定已重置', '所有參數恢復默認值', '', '', 2000);
+        });
+
+        // 數據信息按鈕
+        infoBtn.addEventListener('click', () => {
+            const totalStores = Object.values(globalData).reduce((sum, city) => sum + city.stores, 0);
+            showLocationCard(
+                '全球數據統計',
+                `🌐 覆蓋 ${Object.keys(globalData).length} 個城市\n📊 總門店數: ${totalStores} 家`,
+                '',
+                '',
+                3000
+            );
+        });
+
+        // ==================== 地圖互動 ====================
+        map.on('click', function(e) {
+            clearTimeout(cardTimeout); // 清除之前的計時器
+            
+            const { lat, lng } = e.latlng;
+            let nearestCity = null;
+            let minDistance = Infinity;
+            
+            // 尋找最近的城市 (150公里範圍內)
+            Object.keys(globalData).forEach(key => {
+                const [cityLat, cityLng] = key.split(',').map(Number);
+                const distance = Math.sqrt(Math.pow(cityLat - lat, 2) + Math.pow(cityLng - lng, 2));
+                
+                if (distance < minDistance && distance < 1.35) { // 約150公里
+                    minDistance = distance;
+                    nearestCity = globalData[key];
+                }
+            });
+            
+            if (nearestCity) {
+                updateLocationCard(nearestCity);
+                cardTimeout = setTimeout(() => {
+                    locationCard.classList.remove('show');
+                }, 10000); // 10秒後自動隱藏
+            } else {
+                showLocationCard('未偵測到門店', '請點擊彩色熱區查看詳細數據', '', '', 2000);
+            }
+        });
+
+        // 移動地圖時隱藏卡片
+        map.on('movestart', () => {
+            clearTimeout(cardTimeout);
+            locationCard.classList.remove('show');
+        });
+
+        // ==================== 工具函數 ====================
+        function updateLocationCard(cityData) {
+            document.getElementById('location-name').textContent = cityData.name;
+            document.getElementById('store-count').textContent = cityData.stores;
+            document.getElementById('popular-brands').textContent = cityData.brands;
+            document.getElementById('avg-price').textContent = cityData.price;
+            
+            // 設置男女比例
+            const malePercent = cityData.genderRatio.male;
+            const femalePercent = cityData.genderRatio.female;
+            document.getElementById('male-percent').textContent = malePercent;
+            document.getElementById('female-percent').textContent = femalePercent;
+            document.getElementById('gender-male-bar').style.width = `${malePercent}%`;
+            document.getElementById('gender-female-bar').style.width = `${femalePercent}%`;
+            
+            // 加載國旗
+            const flagImg = document.getElementById('country-flag');
+            flagImg.src = `https://flagcdn.com/w20/${cityData.country.toLowerCase()}.png`;
+            flagImg.alt = cityData.country;
+            
+            locationCard.classList.add('show');
+        }
+        
+        function showLocationCard(title, stores, brands, price, duration) {
+            document.getElementById('location-name').textContent = title;
+            document.getElementById('store-count').textContent = stores;
+            document.getElementById('popular-brands').textContent = brands;
+            document.getElementById('avg-price').textContent = price;
+            locationCard.classList.add('show');
+            setTimeout(() => locationCard.classList.remove('show'), duration);
+        }
     </script>
 </body>
 </html>
