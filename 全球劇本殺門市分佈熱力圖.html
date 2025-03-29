@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全球劇本殺門市分佈熱力圖</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.heat@0.2.0/dist/leaflet-heat.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        #map {
+            height: 100vh;
+            width: 100%;
+        }
+        .info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            z-index: 1000;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        #message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        #message-box.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="info">
+        <h3>劇本殺門市熱力圖</h3>
+        <p>顏色越紅表示密度越高</p>
+    </div>
+    <div id="message-box"></div>
+
+    <script>
+        // 初始化地圖
+        var map = L.map('map').setView([20, 0], 2);
+        
+        // 使用OpenStreetMap底圖
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // 模擬數據 - 確保強度值差異足夠大
+        var stores = [
+            [39.9042, 116.4074, 100], // 北京
+            [31.2304, 121.4737, 150], // 上海
+            [23.1291, 113.2644, 80],  // 廣州
+            [30.6595, 104.0660, 120], // 成都
+            [22.5436, 114.0549, 90],  // 深圳
+            [25.0330, 121.5654, 80],  // 台北
+            [40.7128, -74.0060, 80],  // 紐約
+            [35.6895, 139.6917, 120], // 東京
+            [37.5665, 126.9780, 110], // 首爾
+            [51.5074, 0.1278, 90],    // 倫敦
+            [48.8566, 2.3522, 70],    // 巴黎
+            [1.3521, 103.8198, 65],  // 新加坡
+            [-33.8688, 151.2093, 25]  // 雪梨
+        ];
+
+        // 關鍵修正點：調整熱力圖配置
+        var heat = L.heatLayer(stores, {
+            radius: 25,          // 熱點半徑
+            blur: 15,            // 模糊程度
+            maxZoom: 17,         // 最大縮放級別
+            minOpacity: 0.5,    // 最小透明度
+            max: 150,           // 明確設置最大值
+            gradient: {         // 自定義漸變色
+                0.4: 'blue',
+                0.6: 'cyan',
+                0.7: 'lime',
+                0.8: 'yellow',
+                1.0: 'red'
+            }
+        }).addTo(map);
+
+        function showMessage(msg) {
+            var box = document.getElementById('message-box');
+            box.textContent = msg;
+            box.classList.add('show');
+            setTimeout(function() {
+                box.classList.remove('show');
+            }, 3000);
+        }
+
+        // 添加地圖點擊事件顯示座標（用於調試）
+        map.on('click', function(e) {
+            showMessage('點擊位置: ' + e.latlng.lat.toFixed(4) + ', ' + e.latlng.lng.toFixed(4));
+        });
+
+        // 初始消息
+        showMessage('熱力圖已加載，共 ' + stores.length + ' 個熱點區域');
+    </script>
+</body>
+</html>
