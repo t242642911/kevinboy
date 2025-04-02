@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全球劇本殺玩家消費地圖</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+        }
+        
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #f7f9fc;
+            color: #333;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100vh;
+            z-index: 1;
+        }
+        
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 15px 30px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            z-index: 1000;
+            text-align: center;
+            max-width: 90%;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(106, 27, 154, 0.1);
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #5e35b1;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+        
+        .subtitle {
+            font-size: 15px;
+            color: #666;
+        }
+        
+        .control-panel {
+            position: absolute;
+            top: 110px;
+            right: 20px;
+            background-color: rgba(245, 240, 255, 0.92)
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            z-index: 1000;
+            width: 250px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(106, 27, 154, 0.1);
+        }
+        
+        .control-title {
+            font-weight: 600;
+            color: #5e35b1;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-align: center;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        
+        .control-group {
+            margin-bottom: 18px;
+        }
+        
+        .control-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #444;
+        }
+        
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background-color: white;
+            font-size: 14px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: border-color 0.3s, box-shadow 0.3s;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235e35b1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 15px;
+        }
+        
+        select:focus {
+            border-color: #5e35b1;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(94, 53, 177, 0.2);
+        }
+        
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #5e35b1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+            box-shadow: 0 4px 8px rgba(94, 53, 177, 0.25);
+        }
+        
+        button:hover {
+            background-color: #7c4dff;
+        }
+        
+        .country-selector {
+            position: absolute;
+            top: 110px;
+            left: 20px;
+            background-color: rgba(240, 235, 255, 0.92); 
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            z-index: 1000;
+            width: 250px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(106, 27, 154, 0.1);
+        }
+        
+        .selector-title {
+            font-weight: 600;
+            color: #5e35b1;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-align: center;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        
+        .country-search {
+            margin-bottom: 15px;
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        
+        .country-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            background-color: white;
+        }
+        
+        .country-list-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s;
+        }
+        
+        .country-list-item:hover {
+            background-color: #f5f0ff;
+        }
+        
+        .country-list-item.active {
+            background-color: #ede7f6;
+            color: #5e35b1;
+            font-weight: 600;
+        }
+        
+        .legend {
+            position: absolute;
+            bottom: 40px;
+            right: 20px;
+            background-color: rgba(236, 239, 255, 0.92);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            z-index: 1000;
+            min-width: 220px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(106, 27, 154, 0.1);
+        }
+        
+        .legend-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 14px;
+            color: #444;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            margin-right: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+        
+        .info-box {
+            position: absolute;
+            top: 110px;
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+            z-index: 1000;
+            width: 300px;
+            max-width: calc(100% - 40px);
+            display: none;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(106, 27, 154, 0.1);
+        }
+        
+        .info-title {
+            font-weight: 700;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #5e35b1;
+            text-align: center;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 14px;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #444;
+        }
+        
+        .info-value {
+            text-align: right;
+            color: #5e35b1;
+            font-weight: 600;
+        }
+        
+        .country-detail {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.98);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+            z-index: 2000;
+            width: 90%;
+            max-width: 900px;
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(106, 27, 154, 0.1);
+        }
+        
+        .detail-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #5e35b1;
+            padding-bottom: 15px;
+        }
+        
+        .detail-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #5e35b1;
+        }
+        
+        .detail-close {
+            cursor: pointer;
+            color: #5e35b1;
+            font-size: 28px;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+        
+        .detail-close:hover {
+            background-color: rgba(94, 53, 177, 0.1);
+        }
+        
+        .detail-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+        }
+        
+        .detail-section {
+            flex: 1;
+            min-width: 320px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #5e35b1;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 8px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .data-table th {
+            background-color: #ede7f6;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #5e35b1;
+            border-bottom: 1px solid #d1c4e9;
+            font-size: 14px;
+        }
+        
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+        
+        .data-table tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        
+        .data-table tr:hover {
+            background-color: #f5f0ff;
+        }
+        
+        .highlight {
+            background-color: #ede7f6 !important;
+            font-weight: 600;
+            color: #5e35b1;
+        }
+        
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            color: #7c4dff;
+            background-color: #f9f5ff;
+        }
+        
+        .tab.active {
+            color: #5e35b1;
+            border-bottom-color: #5e35b1;
+            font-weight: 600;
+            background-color: #f5f0ff;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .bar-chart {
+            width: 100%;
+            height: 250px;
+            margin-top: 20px;
+            border-radius: 8px;
+            background-color: #fff;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        #market-analysis {
+            line-height: 1.6;
+            color: #444;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #5e35b1;
+            margin-bottom: 20px;
+        }
+        
+        #market-analysis p {
+            margin-bottom: 10px;
+        }
+        
+        .leaflet-popup-content-wrapper {
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .leaflet-popup-content {
+            margin: 0;
+            padding: 0;
+            min-width: 280px;
+        }
+        
+        .popup-header {
+            background-color: #5e35b1;
+            color: white;
+            padding: 12px 15px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 16px;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+        
+        .popup-content {
+            padding: 15px;
+        }
+        
+        .popup-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .popup-label {
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .popup-value {
+            font-weight: 600;
+            color: #5e35b1;
+        }
+        
+        .data-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .data-card {
+            flex: 1;
+            min-width: 130px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+        
+        .data-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #5e35b1;
+            margin-bottom: 5px;
+        }
+        
+        .data-label {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .popup-button {
+            display: block;
+            margin-top: 15px;
+            text-align: center;
+            padding: 10px;
+            background-color: #5e35b1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(94, 53, 177, 0.25);
+        }
+        
+        .popup-button:hover {
+            background-color: #7c4dff;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1500;
+            display: none;
+            backdrop-filter: blur(2px);
+        }
+        
+        .country-circle {
+    transition: stroke-width 0.2s, stroke-opacity 0.2s;
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.4));
+}
+
+.country-circle:hover {
+    stroke-width: 3;
+    stroke-opacity: 1;
+    cursor: pointer;
+    filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.6));
+}
+        
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 20px;
+            }
+            
+            .title {
+                font-size: 20px;
+            }
+            
+            .subtitle {
+                font-size: 13px;
+            }
+            
+            .control-panel, .info-box, .country-selector {
+                width: 200px;
+            }
+            
+            .detail-content {
+                flex-direction: column;
+            }
+            
+            .detail-section {
+                min-width: 100%;
+            }
+            
+            .popup-content {
+                padding: 10px;
+            }
+        }
+        
+        /* 滾動條美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #c5cae9;
+            border-radius: 10px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #7c4dff;
+        }
+/* 國家列表項目的國旗樣式 */
+.country-flag-small {
+    width: 24px;
+    height: 16px;
+    margin-right: 8px;
+    border-radius: 2px;
+    vertical-align: middle;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.country-list-item {
+    display: flex;
+    align-items: center;
+}
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.css">
+</head>
+<body>
+    <div class="header">
+        <div class="title">全球劇本殺玩家消費地圖</div>
+        <div class="subtitle">探索世界各地劇本殺玩家的消費行為與市場趨勢</div>
+    </div>
+    
+    <div class="country-selector">
+        <div class="selector-title">快速選擇國家</div>
+        <div class="country-search">
+            <input type="text" class="search-input" id="country-search" placeholder="搜尋國家...">
+        </div>
+        <div class="country-list" id="country-list">
+            <!-- 國家列表會動態生成 -->
+        </div>
+    </div>
+    
+    <div class="control-panel">
+        <div class="control-title">數據控制面板</div>
+        <div class="control-group">
+            <label class="control-label" for="data-type">數據類型</label>
+            <select id="data-type">
+                <option value="players">玩家人數</option>
+                <option value="spending">平均消費</option>
+                <option value="growth">市場增長率</option>
+                <option value="market">市場規模</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label class="control-label" for="year">基準年份</label>
+            <select id="year">
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+                <option value="2021">2021</option>
+                <option value="2020">2020</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label class="control-label" for="age-group">年齡層過濾</label>
+            <select id="age-group">
+                <option value="all">所有年齡</option>
+                <option value="18-24">18-24歲</option>
+                <option value="25-34">25-34歲</option>
+                <option value="35-44">35-44歲</option>
+                <option value="45-plus">45歲以上</option>
+            </select>
+        </div>
+        <button id="toggle-info">顯示全球統計</button>
+    </div>
+    
+    <div class="legend">
+        <div class="legend-title" id="legend-title">玩家人數 (萬)</div>
+        <div id="legend-items"></div>
+    </div>
+    
+    <div class="info-box" id="info-box">
+        <div class="info-title">全球劇本殺市場概況</div>
+        <div class="info-row">
+            <span class="info-label">全球玩家總數:</span>
+            <span class="info-value" id="global-players">4,250萬</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">平均每次消費:</span>
+            <span class="info-value" id="global-spending">$38</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">市場總規模:</span>
+            <span class="info-value" id="global-market">$97.2億</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">年增長率:</span>
+            <span class="info-value" id="global-growth">+18.7%</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">最大市場:</span>
+            <span class="info-value">中國大陸</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">增長最快市場:</span>
+            <span class="info-value">菲律賓 (+27.3%)</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">主要年齡層:</span>
+            <span class="info-value">18-34歲 (80%)</span>
+        </div>
+    </div>
+    
+    <div class="overlay" id="overlay"></div>
+    
+    <div class="country-detail" id="country-detail">
+        <div class="detail-header">
+            <div class="detail-title" id="detail-title">中國大陸 - 劇本殺市場詳情</div>
+            <div class="detail-close" id="detail-close">×</div>
+        </div>
+        
+        <div class="data-row">
+            <div class="data-card">
+                <div class="data-value" id="detail-players">2,815萬</div>
+                <div class="data-label">玩家人數</div>
+            </div>
+            <div class="data-card">
+                <div class="data-value" id="detail-spending">$38</div>
+                <div class="data-label">平均消費</div>
+            </div>
+            <div class="data-card">
+                <div class="data-value" id="detail-market">$42.9億</div>
+                <div class="data-label">市場規模</div>
+            </div>
+            <div class="data-card">
+                <div class="data-value" id="detail-growth">+19.8%</div>
+                <div class="data-label">年增長率</div>
+            </div>
+        </div>
+        
+        <div class="detail-content">
+            <div class="detail-section">
+                <div class="tab-container">
+                    <div class="tabs">
+                        <div class="tab active" data-tab="tab-years">年份數據</div>
+                        <div class="tab" data-tab="tab-age">年齡層數據</div>
+                    </div>
+                    
+                    <div class="tab-content active" id="tab-years">
+                        <div class="section-title">各年度數據趨勢</div>
+                        <table class="data-table" id="years-table">
+                            <thead>
+                                <tr>
+                                    <th>年份</th>
+                                    <th>玩家人數 (萬)</th>
+                                    <th>平均消費 (美元)</th>
+                                    <th>市場規模 (百萬美元)</th>
+                                    <th>增長率 (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 年份數據會動態生成 -->
+                            </tbody>
+                        </table>
+                        <div id="years-chart" class="bar-chart"></div>
+                    </div>
+                    
+                    <div class="tab-content" id="tab-age">
+                        <div class="section-title">按年齡層分布 (2024年)</div>
+                        <table class="data-table" id="age-table">
+                            <thead>
+                                <tr>
+                                    <th>年齡層</th>
+                                    <th>玩家佔比 (%)</th>
+                                    <th>平均消費 (美元)</th>
+                                    <th>消費占比 (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- 年齡層數據會動態生成 -->
+                            </tbody>
+                        </table>
+                        <div id="age-chart" class="bar-chart"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <div class="section-title">市場特點與趨勢分析</div>
+                <div id="market-analysis">
+                    <!-- 市場分析內容會動態生成 -->
+                </div>
+                
+                <div class="section-title" style="margin-top: 20px;">玩家偏好分布</div>
+                <table class="data-table" id="preference-table">
+                    <thead>
+                        <tr>
+                            <th>主題類型</th>
+                            <th>偏好率 (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 偏好數據會動態生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div id="map"></div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+    <script>
+        // 初始化地圖
+        const map = L.map('map', {
+            center: [30, 10],
+            zoom: 2,
+            minZoom: 2,
+            maxZoom: 10,
+            zoomControl: true
+        });
+        
+        // 添加底圖
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            subdomains: ['a', 'b', 'c']
+        }).addTo(map);
+        
+        // 國家數據
+        const countryData = {
+            // 玩家人數 (萬)
+            players: {
+                '2024': {
+                    'China': 2815, 'United States': 420, 'Japan': 285, 'South Korea': 210, 
+                    'Germany': 115, 'France': 98, 'United Kingdom': 103, 'Canada': 85, 
+                    'Australia': 73, 'Russia': 120, 'Brazil': 65, 'India': 175, 
+                    'Thailand': 48, 'Malaysia': 42, 'Singapore': 38, 'Indonesia': 52, 
+                    'Vietnam': 44, 'Mexico': 35, 'Spain': 62, 'Italy': 58, 
+'Taiwan': 95, 'Hong Kong': 42, 'Philippines': 28, 'Saudi Arabia': 25, 
+'United Arab Emirates': 18
+},
+'2023': {
+    'China': 2350, 'United States': 365, 'Japan': 245, 'South Korea': 180, 
+    'Germany': 102, 'France': 88, 'United Kingdom': 92, 'Canada': 75, 
+    'Australia': 65, 'Russia': 105, 'Brazil': 55, 'India': 142, 
+    'Thailand': 38, 'Malaysia': 35, 'Singapore': 32, 'Indonesia': 42, 
+    'Vietnam': 36, 'Mexico': 30, 'Spain': 56, 'Italy': 52, 
+    'Taiwan': 82, 'Hong Kong': 38, 'Philippines': 22, 'Saudi Arabia': 20, 
+    'United Arab Emirates': 15
+},
+'2022': {
+    'China': 1950, 'United States': 315, 'Japan': 210, 'South Korea': 155, 
+    'Germany': 90, 'France': 78, 'United Kingdom': 82, 'Canada': 65, 
+    'Australia': 58, 'Russia': 92, 'Brazil': 48, 'India': 115, 
+    'Thailand': 30, 'Malaysia': 28, 'Singapore': 28, 'Indonesia': 34, 
+    'Vietnam': 30, 'Mexico': 26, 'Spain': 50, 'Italy': 46, 
+    'Taiwan': 72, 'Hong Kong': 34, 'Philippines': 18, 'Saudi Arabia': 16, 
+    'United Arab Emirates': 12
+},
+'2021': {
+    'China': 1520, 'United States': 278, 'Japan': 182, 'South Korea': 135, 
+    'Germany': 82, 'France': 70, 'United Kingdom': 74, 'Canada': 58, 
+    'Australia': 52, 'Russia': 82, 'Brazil': 42, 'India': 92, 
+    'Thailand': 24, 'Malaysia': 22, 'Singapore': 24, 'Indonesia': 28, 
+    'Vietnam': 24, 'Mexico': 22, 'Spain': 45, 'Italy': 42, 
+    'Taiwan': 62, 'Hong Kong': 30, 'Philippines': 14, 'Saudi Arabia': 12, 
+    'United Arab Emirates': 10
+},
+'2020': {
+    'China': 1120, 'United States': 245, 'Japan': 158, 'South Korea': 118, 
+    'Germany': 75, 'France': 62, 'United Kingdom': 68, 'Canada': 52, 
+    'Australia': 46, 'Russia': 72, 'Brazil': 36, 'India': 75, 
+    'Thailand': 18, 'Malaysia': 18, 'Singapore': 20, 'Indonesia': 22, 
+    'Vietnam': 18, 'Mexico': 18, 'Spain': 40, 'Italy': 38, 
+    'Taiwan': 54, 'Hong Kong': 26, 'Philippines': 10, 'Saudi Arabia': 9, 
+    'United Arab Emirates': 8
+}
+},
+
+// 平均消費 (美元)
+spending: {
+    '2024': {
+        'China': 38, 'United States': 42, 'Japan': 45, 'South Korea': 43, 
+        'Germany': 38, 'France': 36, 'United Kingdom': 39, 'Canada': 40, 
+        'Australia': 41, 'Russia': 28, 'Brazil': 25, 'India': 22, 
+        'Thailand': 30, 'Malaysia': 32, 'Singapore': 48, 'Indonesia': 24, 
+        'Vietnam': 22, 'Mexico': 28, 'Spain': 35, 'Italy': 34, 
+        'Taiwan': 42, 'Hong Kong': 50, 'Philippines': 25, 'Saudi Arabia': 38, 
+        'United Arab Emirates': 45
+    },
+    '2023': {
+        'China': 35, 'United States': 40, 'Japan': 42, 'South Korea': 40, 
+        'Germany': 36, 'France': 34, 'United Kingdom': 37, 'Canada': 38, 
+        'Australia': 38, 'Russia': 25, 'Brazil': 22, 'India': 20, 
+        'Thailand': 28, 'Malaysia': 30, 'Singapore': 45, 'Indonesia': 22, 
+        'Vietnam': 20, 'Mexico': 26, 'Spain': 33, 'Italy': 32, 
+        'Taiwan': 38, 'Hong Kong': 46, 'Philippines': 22, 'Saudi Arabia': 35, 
+        'United Arab Emirates': 42
+    },
+    '2022': {
+        'China': 32, 'United States': 38, 'Japan': 40, 'South Korea': 38, 
+        'Germany': 35, 'France': 33, 'United Kingdom': 35, 'Canada': 36, 
+        'Australia': 36, 'Russia': 23, 'Brazil': 20, 'India': 18, 
+        'Thailand': 25, 'Malaysia': 28, 'Singapore': 42, 'Indonesia': 20, 
+        'Vietnam': 18, 'Mexico': 24, 'Spain': 32, 'Italy': 30, 
+        'Taiwan': 36, 'Hong Kong': 42, 'Philippines': 20, 'Saudi Arabia': 32, 
+        'United Arab Emirates': 40
+    },
+    '2021': {
+        'China': 30, 'United States': 35, 'Japan': 38, 'South Korea': 36, 
+        'Germany': 32, 'France': 30, 'United Kingdom': 32, 'Canada': 34, 
+        'Australia': 34, 'Russia': 20, 'Brazil': 18, 'India': 15, 
+        'Thailand': 22, 'Malaysia': 25, 'Singapore': 38, 'Indonesia': 18, 
+        'Vietnam': 16, 'Mexico': 22, 'Spain': 30, 'Italy': 28, 
+        'Taiwan': 34, 'Hong Kong': 38, 'Philippines': 18, 'Saudi Arabia': 30, 
+        'United Arab Emirates': 38
+    },
+    '2020': {
+        'China': 26, 'United States': 32, 'Japan': 35, 'South Korea': 32, 
+        'Germany': 30, 'France': 28, 'United Kingdom': 30, 'Canada': 30, 
+        'Australia': 32, 'Russia': 18, 'Brazil': 16, 'India': 12, 
+        'Thailand': 20, 'Malaysia': 22, 'Singapore': 36, 'Indonesia': 16, 
+        'Vietnam': 14, 'Mexico': 20, 'Spain': 28, 'Italy': 26, 
+        'Taiwan': 30, 'Hong Kong': 36, 'Philippines': 15, 'Saudi Arabia': 28, 
+        'United Arab Emirates': 35
+    }
+},
+
+// 增長率 (%)
+growth: {
+    '2024': {
+        'China': 19.8, 'United States': 15.1, 'Japan': 16.3, 'South Korea': 16.7, 
+        'Germany': 12.7, 'France': 11.4, 'United Kingdom': 12.0, 'Canada': 13.3, 
+        'Australia': 12.3, 'Russia': 14.3, 'Brazil': 18.2, 'India': 23.2, 
+        'Thailand': 26.3, 'Malaysia': 20.0, 'Singapore': 18.8, 'Indonesia': 23.8, 
+        'Vietnam': 22.2, 'Mexico': 16.7, 'Spain': 10.7, 'Italy': 11.5, 
+        'Taiwan': 15.9, 'Hong Kong': 10.5, 'Philippines': 27.3, 'Saudi Arabia': 25.0, 
+        'United Arab Emirates': 20.0
+    },
+    '2023': {
+        'China': 20.5, 'United States': 15.9, 'Japan': 16.7, 'South Korea': 16.1, 
+        'Germany': 13.3, 'France': 12.8, 'United Kingdom': 12.2, 'Canada': 13.8, 
+        'Australia': 12.1, 'Russia': 14.1, 'Brazil': 16.7, 'India': 23.9, 
+        'Thailand': 26.7, 'Malaysia': 19.4, 'Singapore': 14.3, 'Indonesia': 23.5, 
+        'Vietnam': 20.0, 'Mexico': 15.4, 'Spain': 12.0, 'Italy': 13.0, 
+        'Taiwan': 16.1, 'Hong Kong': 11.8, 'Philippines': 28.6, 'Saudi Arabia': 33.3, 
+        'United Arab Emirates': 20.0
+    },
+    '2022': {
+        'China': 28.3, 'United States': 13.3, 'Japan': 15.4, 'South Korea': 14.8, 
+        'Germany': 9.8, 'France': 11.4, 'United Kingdom': 10.8, 'Canada': 12.1, 
+        'Australia': 11.5, 'Russia': 12.2, 'Brazil': 14.3, 'India': 25.0, 
+        'Thailand': 25.0, 'Malaysia': 27.3, 'Singapore': 16.7, 'Indonesia': 21.4, 
+        'Vietnam': 25.0, 'Mexico': 18.2, 'Spain': 11.1, 'Italy': 9.5, 
+        'Taiwan': 16.1, 'Hong Kong': 13.3, 'Philippines': 28.6, 'Saudi Arabia': 33.3, 
+        'United Arab Emirates': 20.0
+    },
+    '2021': {
+        'China': 35.7, 'United States': 13.5, 'Japan': 15.2, 'South Korea': 14.4, 
+        'Germany': 9.3, 'France': 12.9, 'United Kingdom': 8.8, 'Canada': 11.5, 
+        'Australia': 13.0, 'Russia': 13.9, 'Brazil': 16.7, 'India': 22.7, 
+        'Thailand': 33.3, 'Malaysia': 22.2, 'Singapore': 20.0, 'Indonesia': 27.3, 
+        'Vietnam': 33.3, 'Mexico': 22.2, 'Spain': 12.5, 'Italy': 10.5, 
+        'Taiwan': 14.8, 'Hong Kong': 15.4, 'Philippines': 40.0, 'Saudi Arabia': 33.3, 
+        'United Arab Emirates': 25.0
+    },
+    '2020': {
+        'China': 45.5, 'United States': 16.7, 'Japan': 18.8, 'South Korea': 18.0, 
+        'Germany': 15.4, 'France': 14.8, 'United Kingdom': 13.3, 'Canada': 15.6, 
+        'Australia': 15.0, 'Russia': 20.0, 'Brazil': 20.0, 'India': 25.0, 
+        'Thailand': 38.5, 'Malaysia': 28.6, 'Singapore': 25.0, 'Indonesia': 37.5, 
+        'Vietnam': 38.5, 'Mexico': 28.6, 'Spain': 17.6, 'Italy': 18.8, 
+        'Taiwan': 22.7, 'Hong Kong': 23.8, 'Philippines': 42.9, 'Saudi Arabia': 50.0, 
+        'United Arab Emirates': 33.3
+    }
+},
+
+// 市場規模 (百萬美元)
+market: {
+    '2024': {
+        'China': 4285, 'United States': 705, 'Japan': 513, 'South Korea': 361, 
+        'Germany': 175, 'France': 141, 'United Kingdom': 161, 'Canada': 136, 
+        'Australia': 120, 'Russia': 134, 'Brazil': 65, 'India': 154, 
+        'Thailand': 58, 'Malaysia': 54, 'Singapore': 73, 'Indonesia': 50, 
+        'Vietnam': 39, 'Mexico': 39, 'Spain': 87, 'Italy': 79, 
+        'Taiwan': 160, 'Hong Kong': 84, 'Philippines': 28, 'Saudi Arabia': 38, 
+        'United Arab Emirates': 32
+    },
+    '2023': {
+        'China': 3290, 'United States': 584, 'Japan': 412, 'South Korea': 288, 
+        'Germany': 147, 'France': 120, 'United Kingdom': 136, 'Canada': 114, 
+        'Australia': 99, 'Russia': 105, 'Brazil': 48, 'India': 114, 
+        'Thailand': 42, 'Malaysia': 42, 'Singapore': 58, 'Indonesia': 37, 
+        'Vietnam': 29, 'Mexico': 31, 'Spain': 74, 'Italy': 67, 
+        'Taiwan': 125, 'Hong Kong': 70, 'Philippines': 19, 'Saudi Arabia': 28, 
+        'United Arab Emirates': 25
+    },
+    '2022': {
+        'China': 2496, 'United States': 479, 'Japan': 336, 'South Korea': 236, 
+        'Germany': 126, 'France': 103, 'United Kingdom': 115, 'Canada': 94, 
+        'Australia': 84, 'Russia': 85, 'Brazil': 38, 'India': 83, 
+        'Thailand': 30, 'Malaysia': 31, 'Singapore': 47, 'Indonesia': 27, 
+        'Vietnam': 22, 'Mexico': 25, 'Spain': 64, 'Italy': 55, 
+        'Taiwan': 104, 'Hong Kong': 57, 'Philippines': 14, 'Saudi Arabia': 20, 
+        'United Arab Emirates': 19
+    },
+    '2021': {
+        'China': 1824, 'United States': 389, 'Japan': 277, 'South Korea': 195, 
+        'Germany': 105, 'France': 84, 'United Kingdom': 95, 'Canada': 79, 
+        'Australia': 71, 'Russia': 66, 'Brazil': 30, 'India': 55, 
+        'Thailand': 21, 'Malaysia': 22, 'Singapore': 37, 'Indonesia': 20, 
+        'Vietnam': 15, 'Mexico': 19, 'Spain': 54, 'Italy': 47, 
+        'Taiwan': 84, 'Hong Kong': 46, 'Philippines': 10, 'Saudi Arabia': 14, 
+        'United Arab Emirates': 15
+    },
+    '2020': {
+        'China': 1165, 'United States': 313, 'Japan': 221, 'South Korea': 151, 
+        'Germany': 90, 'France': 69, 'United Kingdom': 82, 'Canada': 62, 
+        'Australia': 59, 'Russia': 52, 'Brazil': 23, 'India': 36, 
+        'Thailand': 14, 'Malaysia': 16, 'Singapore': 29, 'Indonesia': 14, 
+        'Vietnam': 10, 'Mexico': 14, 'Spain': 45, 'Italy': 40, 
+        'Taiwan': 65, 'Hong Kong': 37, 'Philippines': 6, 'Saudi Arabia': 10, 
+        'United Arab Emirates': 11
+    }
+}
+};
+
+// 國家中心點坐標
+const countryCoordinates = {
+'China': [35.86166, 104.195397],
+'United States': [37.09024, -95.712891],
+'Japan': [36.204824, 138.252924],
+'South Korea': [35.907757, 127.766922],
+'Germany': [51.165691, 10.451526],
+'France': [46.227638, 2.213749],
+'United Kingdom': [55.378051, -3.435973],
+'Canada': [56.130366, -106.346771],
+'Australia': [-25.274398, 133.775136],
+'Russia': [61.52401, 105.318756],
+'Brazil': [-14.235004, -51.92528],
+'India': [20.593684, 78.96288],
+'Thailand': [15.870032, 100.992541],
+'Malaysia': [4.210484, 101.975766],
+'Singapore': [1.352083, 103.819836],
+'Indonesia': [-0.789275, 113.921327],
+'Vietnam': [14.058324, 108.277199],
+'Mexico': [23.634501, -102.552784],
+'Spain': [40.463667, -3.74922],
+'Italy': [41.87194, 12.56738],
+'Taiwan': [23.69781, 120.960515],
+'Hong Kong': [22.396428, 114.109497],
+'Philippines': [12.879721, 121.774017],
+'Saudi Arabia': [23.885942, 45.079162],
+'United Arab Emirates': [23.424076, 53.847818]
+};
+
+// 國家中文名稱映射
+const countryChineseNames = {
+'China': '中國大陸',
+'United States': '美國',
+'Japan': '日本',
+'South Korea': '韓國',
+'Germany': '德國',
+'France': '法國',
+'United Kingdom': '英國',
+'Canada': '加拿大',
+'Australia': '澳大利亞',
+'Russia': '俄羅斯',
+'Brazil': '巴西',
+'India': '印度',
+'Thailand': '泰國',
+'Malaysia': '馬來西亞',
+'Singapore': '新加坡',
+'Indonesia': '印尼',
+'Vietnam': '越南',
+'Mexico': '墨西哥',
+'Spain': '西班牙',
+'Italy': '義大利',
+'Taiwan': '台灣',
+'Hong Kong': '香港',
+'Philippines': '菲律賓',
+'Saudi Arabia': '沙特阿拉伯',
+'United Arab Emirates': '阿聯酋'
+};
+// 國家ISO代碼映射（用於獲取國旗）
+const countryISOCodes = {
+    'China': 'cn',
+    'United States': 'us',
+    'Japan': 'jp',
+    'South Korea': 'kr',
+    'Germany': 'de',
+    'France': 'fr',
+    'United Kingdom': 'gb',
+    'Canada': 'ca',
+    'Australia': 'au',
+    'Russia': 'ru',
+    'Brazil': 'br',
+    'India': 'in',
+    'Thailand': 'th',
+    'Malaysia': 'my',
+    'Singapore': 'sg',
+    'Indonesia': 'id',
+    'Vietnam': 'vn',
+    'Mexico': 'mx',
+    'Spain': 'es',
+    'Italy': 'it',
+    'Taiwan': 'tw',
+    'Hong Kong': 'hk',
+    'Philippines': 'ph',
+    'Saudi Arabia': 'sa',
+    'United Arab Emirates': 'ae'
+};
+// 主題偏好數據
+const themePreferences = {
+'China': {'懸疑推理': 38, '恐怖驚悚': 22, '冒險解謎': 16, '歷史情境': 14, '奇幻童話': 10},
+'United States': {'冒險解謎': 32, '懸疑推理': 28, '恐怖驚悚': 20, '歷史情境': 15, '奇幻童話': 5},
+'Japan': {'恐怖驚悚': 35, '懸疑推理': 30, '奇幻童話': 15, '歷史情境': 12, '冒險解謎': 8},
+'South Korea': {'恐怖驚悚': 30, '懸疑推理': 28, '歷史情境': 18, '冒險解謎': 15, '奇幻童話': 9},
+'Taiwan': {'懸疑推理': 35, '恐怖驚悚': 25, '冒險解謎': 18, '歷史情境': 12, '奇幻童話': 10},
+'Hong Kong': {'懸疑推理': 33, '恐怖驚悚': 28, '冒險解謎': 15, '歷史情境': 14, '奇幻童話': 10},
+'Germany': {'歷史情境': 30, '懸疑推理': 25, '冒險解謎': 24, '恐怖驚悚': 15, '奇幻童話': 6},
+'France': {'歷史情境': 32, '懸疑推理': 28, '冒險解謎': 20, '恐怖驚悚': 12, '奇幻童話': 8},
+'United Kingdom': {'懸疑推理': 30, '冒險解謎': 25, '歷史情境': 22, '恐怖驚悚': 18, '奇幻童話': 5},
+'Russia': {'恐怖驚悚': 32, '懸疑推理': 28, '歷史情境': 20, '冒險解謎': 15, '奇幻童話': 5}
+};
+
+// 年齡層數據
+const ageData = {
+'all': {
+    'distribution': {'18-24': 42, '25-34': 38, '35-44': 15, '45-plus': 5},
+    'spending': {'18-24': 34, '25-34': 42, '35-44': 46, '45-plus': 50}
+},
+'China': {
+    'distribution': {'18-24': 45, '25-34': 40, '35-44': 12, '45-plus': 3},
+    'spending': {'18-24': 32, '25-34': 38, '35-44': 42, '45-plus': 45}
+},
+'United States': {
+    'distribution': {'18-24': 38, '25-34': 35, '35-44': 18, '45-plus': 9},
+    'spending': {'18-24': 38, '25-34': 42, '35-44': 45, '45-plus': 48}
+},
+'Japan': {
+    'distribution': {'18-24': 35, '25-34': 38, '35-44': 20, '45-plus': 7},
+    'spending': {'18-24': 40, '25-34': 45, '35-44': 48, '45-plus': 52}
+},
+'South Korea': {
+    'distribution': {'18-24': 40, '25-34': 38, '35-44': 16, '45-plus': 6},
+    'spending': {'18-24': 38, '25-34': 43, '35-44': 45, '45-plus': 48}
+},
+'Taiwan': {
+    'distribution': {'18-24': 42, '25-34': 38, '35-44': 15, '45-plus': 5},
+    'spending': {'18-24': 36, '25-34': 42, '35-44': 45, '45-plus': 48}
+},
+'Germany': {
+    'distribution': {'18-24': 32, '25-34': 38, '35-44': 22, '45-plus': 8},
+    'spending': {'18-24': 34, '25-34': 38, '35-44': 42, '45-plus': 45}
+}
+};
+
+// 數據類型單位映射
+const dataUnits = {
+'players': '萬',
+'spending': '美元',
+'growth': '%',
+'market': '百萬美元'
+};
+
+// 數據類型標題映射
+const dataTitles = {
+'players': '玩家人數',
+'spending': '平均消費',
+'growth': '市場增長率',
+'market': '市場規模'
+};
+
+// 顏色方案
+const colorSchemes = {
+'players': ['#e3f2fd', '#bbdefb', '#90caf9', '#64b5f6', '#42a5f5', '#2196f3', '#1e88e5', '#1976d2', '#1565c0', '#0d47a1'],
+'spending': ['#e8f5e9', '#c8e6c9', '#a5d6a7', '#81c784', '#66bb6a', '#4caf50', '#43a047', '#388e3c', '#2e7d32', '#1b5e20'],
+'growth': ['#fff3e0', '#ffe0b2', '#ffcc80', '#ffb74d', '#ffa726', '#ff9800', '#fb8c00', '#f57c00', '#ef6c00', '#e65100'],
+'market': ['#f3e5f5', '#e1bee7', '#ce93d8', '#ba68c8', '#ab47bc', '#9c27b0', '#8e24aa', '#7b1fa2', '#6a1b9a', '#4a148c']
+};
+
+// 最大值設定
+const maxValues = {
+'players': 3000,
+'spending': 50,
+'growth': 30,
+'market': 5000
+};
+
+// 全局變量存儲當前標記、國家詳情圖表和當前國家
+let markers = [];
+let yearsChart = null;
+let ageDistributionChart = null;
+let currentCountry = null;
+
+// 初始化國家列表
+function initCountryList() {
+    const countryList = document.getElementById('country-list');
+    countryList.innerHTML = '';
+    
+    const countries = Object.keys(countryChineseNames).sort((a, b) => {
+        return countryChineseNames[a].localeCompare(countryChineseNames[b], 'zh-TW');
+    });
+    
+    countries.forEach(country => {
+        const listItem = document.createElement('div');
+        listItem.className = 'country-list-item';
+        
+        // 添加國旗
+        if (countryISOCodes[country]) {
+            const flagImg = document.createElement('img');
+            flagImg.src = `https://flagcdn.com/w40/${countryISOCodes[country]}.png`;
+            flagImg.className = 'country-flag-small';
+            flagImg.alt = countryChineseNames[country];
+            listItem.appendChild(flagImg);
+        }
+        
+        // 添加國家名稱
+        const countryName = document.createElement('span');
+        countryName.textContent = countryChineseNames[country];
+        listItem.appendChild(countryName);
+        
+        listItem.dataset.country = country;
+        
+        listItem.addEventListener('click', function() {
+            showCountryDetail(this.dataset.country);
+            
+            // 移除所有項目的活動狀態
+            document.querySelectorAll('.country-list-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // 添加活動狀態
+            this.classList.add('active');
+        });
+        
+        countryList.appendChild(listItem);
+    });
+    
+    // 國家搜尋功能
+    const searchInput = document.getElementById('country-search');
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        
+        document.querySelectorAll('.country-list-item').forEach(item => {
+            const countryName = item.textContent.toLowerCase();
+            if (countryName.includes(query)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+}
+
+// 獲取數據值的顏色
+function getColor(value, maxValue, dataType) {
+    const normalized = Math.min(Math.max(value / maxValue, 0), 1);
+    const colorArray = colorSchemes[dataType];
+    const index = Math.floor(normalized * (colorArray.length - 1));
+    return colorArray[index];
+}
+
+// 根據數據設置圓形大小
+function getRadius(value, maxValue) {
+    // 最小半徑8，最大半徑50
+    return Math.max(8, Math.min(50, 8 + (value / maxValue) * 42));
+}
+
+// 更新圖例
+function updateLegend(dataType) {
+    const legendTitle = document.getElementById('legend-title');
+    const legendItems = document.getElementById('legend-items');
+    const maxValue = maxValues[dataType];
+    const colors = colorSchemes[dataType];
+    
+    legendTitle.textContent = `${dataTitles[dataType]} (${dataUnits[dataType]})`;
+    legendItems.innerHTML = '';
+    
+    // 創建5個圖例項
+    const steps = 5;
+    for (let i = steps - 1; i >= 0; i--) {
+        const value = Math.round((maxValue * (i + 1)) / steps);
+        const color = colors[Math.floor((colors.length - 1) * (i + 1) / steps)];
+        
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
+        
+        const legendColor = document.createElement('div');
+        legendColor.className = 'legend-color';
+        legendColor.style.backgroundColor = color;
+        
+        const legendText = document.createElement('span');
+        legendText.textContent = `${value.toLocaleString()} ${dataUnits[dataType]}`;
+        
+        legendItem.appendChild(legendColor);
+        legendItem.appendChild(legendText);
+        legendItems.appendChild(legendItem);
+    }
+}
+
+// 更新地圖數據
+function updateMap() {
+    // 獲取當前選項
+    const dataType = document.getElementById('data-type').value;
+    const year = document.getElementById('year').value;
+    const ageGroup = document.getElementById('age-group').value;
+    
+    // 清除現有標記
+    markers.forEach(marker => map.removeLayer(marker));
+    markers = [];
+    
+    // 獲取數據集
+    const dataset = countryData[dataType][year];
+    const maxValue = maxValues[dataType];
+    
+    // 更新圖例
+    updateLegend(dataType);
+    
+    // 更新全球統計數據
+    updateGlobalStats(dataType, year, ageGroup);
+    
+    // 添加新標記
+    for (const country in dataset) {
+        if (countryCoordinates[country]) {
+            let value = dataset[country];
+            
+            // 根據年齡層調整數據
+            if (ageGroup !== 'all') {
+                if (ageGroup === '18-24') {
+                    value = adjustValueByAge(value, dataType, 0.42, 0.9, 1.2, 0.38);
+                } else if (ageGroup === '25-34') {
+                    value = adjustValueByAge(value, dataType, 0.38, 1.1, 1.1, 0.42);
+                } else if (ageGroup === '35-44') {
+                    value = adjustValueByAge(value, dataType, 0.15, 1.2, 0.9, 0.15);
+                } else if (ageGroup === '45-plus') {
+                    value = adjustValueByAge(value, dataType, 0.05, 1.3, 0.75, 0.05);
+                }
+            }
+            
+            const color = getColor(value, maxValue, dataType);
+            const radius = getRadius(value, maxValue);
+            
+            const circle = L.circleMarker(countryCoordinates[country], {
+                radius: radius,
+                fillColor: color,
+                color: '#333',
+                weight: 3,
+                opacity: 1,
+                fillOpacity: 0.8,
+className: 'country-circle'
+}).addTo(map);
+
+// 創建自訂彈出窗口
+const popupContent = document.createElement('div');
+popupContent.innerHTML = `
+    <div class="popup-header">${countryChineseNames[country]}</div>
+    <div class="popup-content">
+        <div class="popup-row">
+            <span class="popup-label">${dataTitles[dataType]}:</span>
+            <span class="popup-value">${value.toLocaleString()} ${dataUnits[dataType]}</span>
+        </div>
+        <div class="popup-row">
+            <span class="popup-label">年份:</span>
+            <span class="popup-value">${year}</span>
+        </div>
+        <button class="popup-button">查看詳細數據</button>
+    </div>
+`;
+
+// 添加點擊事件到彈出窗口中的按鈕
+const button = popupContent.querySelector('.popup-button');
+button.addEventListener('click', function() {
+    showCountryDetail(country);
+    circle.closePopup();
+});
+
+circle.bindPopup(popupContent);
+
+// 懸停效果
+circle.on('mouseover', function() {
+    this.setStyle({
+        weight: 3,
+        fillOpacity: 0.9
+    });
+    this.bringToFront();
+});
+
+circle.on('mouseout', function() {
+    this.setStyle({
+        weight: 2,
+        fillOpacity: 0.8
+    });
+});
+
+// 儲存國家名稱
+circle.country = country;
+
+// 添加點擊事件
+circle.on('click', function() {
+    // 已經在彈出窗口中添加了按鈕點擊事件
+});
+
+markers.push(circle);
+}
+}
+}
+
+// 根據年齡層調整數據
+function adjustValueByAge(value, dataType, playersFactor, spendingFactor, growthFactor, marketFactor) {
+if (dataType === 'players') {
+    return value * playersFactor;
+} else if (dataType === 'spending') {
+    return value * spendingFactor;
+} else if (dataType === 'growth') {
+    return value * growthFactor;
+} else if (dataType === 'market') {
+    return value * marketFactor;
+}
+return value;
+}
+
+// 更新全球統計數據
+function updateGlobalStats(dataType, year, ageGroup) {
+// 全球統計數據
+let players = 4250;
+let spending = 38;
+let market = 9720;
+let growth = 18.7;
+
+// 根據年份調整
+if (year === '2023') {
+    players = 3580;
+    spending = 32;
+    market = 7290;
+    growth = 22.5;
+} else if (year === '2022') {
+    players = 2950;
+    spending = 28;
+    market = 5245;
+    growth = 26.8;
+} else if (year === '2021') {
+    players = 2325;
+    spending = 25;
+    market = 3690;
+    growth = 32.4;
+} else if (year === '2020') {
+    players = 1755;
+    spending = 22;
+    market = 2445;
+    growth = 38.6;
+}
+
+// 根據年齡層調整
+if (ageGroup === '18-24') {
+    players *= 0.42;
+    spending *= 0.9;
+    market = players * spending * 0.8;
+    growth *= 1.2;
+} else if (ageGroup === '25-34') {
+    players *= 0.38;
+    spending *= 1.1;
+    market = players * spending * 0.85;
+    growth *= 1.1;
+} else if (ageGroup === '35-44') {
+    players *= 0.15;
+    spending *= 1.2;
+    market = players * spending * 0.9;
+    growth *= 0.9;
+} else if (ageGroup === '45-plus') {
+    players *= 0.05;
+    spending *= 1.3;
+    market = players * spending * 0.95;
+    growth *= 0.75;
+}
+
+// 更新UI
+document.getElementById('global-players').textContent = `${players.toLocaleString()}萬`;
+document.getElementById('global-spending').textContent = `$${spending}`;
+document.getElementById('global-market').textContent = `$${(market / 100).toFixed(1)}億`;
+document.getElementById('global-growth').textContent = `+${growth.toFixed(1)}%`;
+}
+
+// 顯示國家詳情
+function showCountryDetail(country) {
+currentCountry = country;
+const chineseName = countryChineseNames[country] || country;
+document.getElementById('detail-title').textContent = `${chineseName} - 劇本殺市場詳情`;
+
+// 更新概覽數據卡片
+updateDetailCards(country);
+
+// 填充年份數據表格
+updateYearsTable(country);
+
+// 填充年齡層數據表格
+updateAgeTable(country);
+
+// 填充市場分析
+updateMarketAnalysis(country);
+
+// 填充玩家偏好表格
+updatePreferenceTable(country);
+
+// 更新圖表
+setTimeout(() => {
+    updateYearsChart(country);
+    updateAgeChart(country);
+}, 100);
+
+// 顯示詳情面板和背景遮罩
+document.getElementById('country-detail').style.display = 'block';
+document.getElementById('overlay').style.display = 'block';
+}
+
+// 更新詳情卡片
+function updateDetailCards(country) {
+const year = document.getElementById('year').value;
+const players = countryData.players[year][country];
+const spending = countryData.spending[year][country];
+const market = countryData.market[year][country];
+const growth = countryData.growth[year][country];
+
+document.getElementById('detail-players').textContent = `${players.toLocaleString()}萬`;
+document.getElementById('detail-spending').textContent = `$${spending}`;
+document.getElementById('detail-market').textContent = `$${(market / 1000).toFixed(1)}億`;
+document.getElementById('detail-growth').textContent = `+${growth.toFixed(1)}%`;
+}
+
+// 更新年份數據表格
+function updateYearsTable(country) {
+const tbody = document.querySelector('#years-table tbody');
+tbody.innerHTML = '';
+
+const years = ['2024', '2023', '2022', '2021', '2020'];
+years.forEach(year => {
+    const tr = document.createElement('tr');
+    
+    const tdYear = document.createElement('td');
+    tdYear.textContent = year;
+    tr.appendChild(tdYear);
+    
+    const tdPlayers = document.createElement('td');
+    tdPlayers.textContent = countryData.players[year][country].toLocaleString();
+    tr.appendChild(tdPlayers);
+    
+    const tdSpending = document.createElement('td');
+    tdSpending.textContent = countryData.spending[year][country].toLocaleString();
+    tr.appendChild(tdSpending);
+    
+    const tdMarket = document.createElement('td');
+    tdMarket.textContent = countryData.market[year][country].toLocaleString();
+    tr.appendChild(tdMarket);
+    
+    const tdGrowth = document.createElement('td');
+    tdGrowth.textContent = countryData.growth[year][country].toFixed(1);
+    tr.appendChild(tdGrowth);
+    
+    // 添加高亮
+    if (year === document.getElementById('year').value) {
+        tr.classList.add('highlight');
+    }
+    
+    tbody.appendChild(tr);
+});
+}
+
+// 更新年齡層數據表格
+function updateAgeTable(country) {
+const tbody = document.querySelector('#age-table tbody');
+tbody.innerHTML = '';
+
+const ageGroups = ['18-24', '25-34', '35-44', '45-plus'];
+const countryAgeData = ageData[country] || ageData.all;
+
+ageGroups.forEach(age => {
+    const tr = document.createElement('tr');
+    
+    const tdAge = document.createElement('td');
+    tdAge.textContent = age;
+    tr.appendChild(tdAge);
+    
+    const tdDistribution = document.createElement('td');
+    tdDistribution.textContent = countryAgeData.distribution[age];
+    tr.appendChild(tdDistribution);
+    
+    const tdSpending = document.createElement('td');
+    tdSpending.textContent = countryAgeData.spending[age];
+    tr.appendChild(tdSpending);
+    
+    const tdPercentage = document.createElement('td');
+    const percentage = (countryAgeData.distribution[age] * countryAgeData.spending[age]) / 
+                    ageGroups.reduce((sum, g) => sum + countryAgeData.distribution[g] * countryAgeData.spending[g], 0) * 100;
+    tdPercentage.textContent = percentage.toFixed(1);
+    tr.appendChild(tdPercentage);
+    
+    // 添加高亮
+    if (age === document.getElementById('age-group').value) {
+        tr.classList.add('highlight');
+    }
+    
+    tbody.appendChild(tr);
+});
+}
+
+// 更新偏好表格
+function updatePreferenceTable(country) {
+const tbody = document.querySelector('#preference-table tbody');
+tbody.innerHTML = '';
+
+const preferences = themePreferences[country] || themePreferences.China;
+Object.entries(preferences)
+    .sort((a, b) => b[1] - a[1])
+    .forEach(([theme, value]) => {
+        const tr = document.createElement('tr');
+        
+        const tdTheme = document.createElement('td');
+        tdTheme.textContent = theme;
+        tr.appendChild(tdTheme);
+        
+        const tdValue = document.createElement('td');
+        tdValue.textContent = value;
+        tr.appendChild(tdValue);
+        
+        tbody.appendChild(tr);
+    });
+}
+
+// 更新市場分析內容
+function updateMarketAnalysis(country) {
+const container = document.getElementById('market-analysis');
+const chineseName = countryChineseNames[country] || country;
+
+let content = '';
+
+// 獲取該國基本數據
+const playersCurrent = countryData.players['2024'][country];
+const playersLast = countryData.players['2023'][country];
+const growthRate = countryData.growth['2024'][country];
+const avgSpending = countryData.spending['2024'][country];
+const marketSize = countryData.market['2024'][country];
+const globalPlayers = 4250; // 2024全球玩家總數 (萬)
+
+// 市場分析
+const marketShare = (playersCurrent / globalPlayers * 100).toFixed(1);
+const playerGrowth = ((playersCurrent - playersLast) / playersLast * 100).toFixed(1);
+const countryAgeData = ageData[country] || ageData.all;
+const preferences = themePreferences[country] || themePreferences.China;
+const topTheme = Object.entries(preferences).sort((a, b) => b[1] - a[1])[0][0];
+
+// 生成分析文本
+if (country === 'China') {
+    content = `
+        <p>中國大陸是全球最大的劇本殺市場，擁有約${playersCurrent}萬活躍玩家，佔全球市場份額的${marketShare}%。2024年市場增長率為${growthRate}%，
+        略低於去年的${countryData.growth['2023'][country]}%，但仍保持穩健增長。平均消費為${avgSpending}美元，總市場規模達${marketSize}百萬美元。</p>
+        
+        <p>從年齡分布看，${Object.entries(countryAgeData.distribution).sort((a, b) => b[1] - a[1])[0][0]}歲年齡層佔比最高，達${Object.entries(countryAgeData.distribution).sort((a, b) => b[1] - a[1])[0][1]}%。
+        主題偏好方面，${topTheme}類最受歡迎，佔比${preferences[topTheme]}%。近年來，線上平台和沉浸式體驗場所快速發展，推動了市場擴張。</p>
+    `;
+} else if (country === 'United States') {
+    content = `
+        <p>美國劇本殺市場發展迅速，當前有${playersCurrent}萬活躍玩家，佔全球市場份額的${marketShare}%。2024年市場增長率為${growthRate}%，
+        平均消費為${avgSpending}美元，高於全球平均水平。總市場規模達${marketSize}百萬美元。</p>
+        
+        <p>從年齡分布看，${Object.entries(countryAgeData.distribution).sort((a, b) => b[1] - a[1])[0][0]}歲年齡層佔比最高，達${Object.entries(countryAgeData.distribution).sort((a, b) => b[1] - a[1])[0][1]}%。
+        主題偏好方面，${topTheme}類最受歡迎，佔比${preferences[topTheme]}%。美國市場特點是主題多元化，且與派對、社交活動深度結合，企業團建活動也是重要需求來源。</p>
+    `;
+} else if (country === 'Japan') {
+    content = `
+        <p>日本劇本殺市場具有獨特風格，當前有${playersCurrent}萬活躍玩家，佔全球市場份額的${marketShare}%。2024年市場增長率為${growthRate}%，
+        平均消費為${avgSpending}美元，總市場規模達${marketSize}百萬美元。</p>
+        
+        <p>從年齡分布看，${Object.entries(countryAgeData.distribution).sort((a, b) => b[1] - a[1])[0][0]}歲年齡層佔比最高，達${Object.entries(countryAgeData.distribution).sort((a, b) => b[1] - a[1])[0][1]}%。
+        主題偏好方面，${topTheme}類最受歡迎，佔比${preferences[topTheme]}%。日本市場特色是結合本土恐怖文化和動漫元素，設施精緻度高，沉浸式體驗突出。</p>
+    `;
+} else {
+    content = `
+        <p>${chineseName}劇本殺市場正處於${growthRate > 20 ? '快速發展' : (growthRate > 10 ? '穩定增長' : '成熟')}階段，當前有${playersCurrent}萬活躍玩家，
+        佔全球市場份額的${marketShare}%。2024年市場增長率為${growthRate}%，平均消費為${avgSpending}美元，總市場規模達${marketSize}百萬美元。</p>
+        
+        <p>與去年相比，玩家數量增長了${playerGrowth}%。該市場主要消費群體為年輕人，主題偏好多元化，隨著全球劇本殺風潮擴散，預計未來幾年將持續保持增長態勢。</p>
+    `;
+}
+
+container.innerHTML = content;
+}
+
+// 更新年份趨勢圖表
+function updateYearsChart(country) {
+const ctx = document.getElementById('years-chart');
+
+// 如果已存在圖表，先銷毀
+if (yearsChart) {
+    yearsChart.destroy();
+}
+
+const years = ['2020', '2021', '2022', '2023', '2024'];
+const playersData = years.map(year => countryData.players[year][country]);
+const marketData = years.map(year => countryData.market[year][country]);
+
+yearsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: years,
+        datasets: [
+            {
+                label: '玩家人數 (萬)',
+                data: playersData,
+                backgroundColor: '#2196f3',
+                yAxisID: 'y',
+                order: 2
+            },
+            {
+                label: '市場規模 (百萬美元)',
+                data: marketData,
+                type: 'line',
+                borderColor: '#9c27b0',
+                backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                yAxisID: 'y1',
+                order: 1
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: '玩家人數 (萬)'
+                }
+            },
+            y1: {
+                beginAtZero: true,
+                position: 'right',
+                grid: {
+                    drawOnChartArea: false
+                },
+                title: {
+                    display: true,
+                    text: '市場規模 (百萬美元)'
+                }
+            }
+        }
+    }
+});
+}
+
+// 更新年齡分布圖表
+function updateAgeChart(country) {
+const ctx = document.getElementById('age-chart');
+
+// 如果已存在圖表，先銷毀
+if (ageDistributionChart) {
+    ageDistributionChart.destroy();
+}
+
+const countryAgeData = ageData[country] || ageData.all;
+const ageGroups = ['18-24', '25-34', '35-44', '45-plus'];
+const distributionData = ageGroups.map(age => countryAgeData.distribution[age]);
+const spendingData = ageGroups.map(age => countryAgeData.spending[age]);
+
+ageDistributionChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ageGroups,
+        datasets: [
+            {
+                label: '玩家佔比 (%)',
+                data: distributionData,
+                backgroundColor: '#4caf50',
+                yAxisID: 'y',
+                order: 2
+            },
+            {
+                label: '平均消費 (美元)',
+                data: spendingData,
+                type: 'line',
+                borderColor: '#ff9800',
+                backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.1,
+                yAxisID: 'y1',
+                order: 1
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: '玩家佔比 (%)'
+                }
+            },
+            y1: {
+                beginAtZero: true,
+                position: 'right',
+                grid: {
+                    drawOnChartArea: false
+                },
+                title: {
+                    display: true,
+                    text: '平均消費 (美元)'
+                }
+            }
+        }
+    }
+});
+}
+
+// 初始化事件監聽器
+function initEventListeners() {
+// 監聽篩選器變化
+document.getElementById('data-type').addEventListener('change', updateMap);
+document.getElementById('year').addEventListener('change', updateMap);
+document.getElementById('age-group').addEventListener('change', updateMap);
+
+// 全球統計面板切換
+const toggleInfoBtn = document.getElementById('toggle-info');
+const infoBox = document.getElementById('info-box');
+
+toggleInfoBtn.addEventListener('click', function() {
+    if (infoBox.style.display === 'none' || infoBox.style.display === '') {
+        infoBox.style.display = 'block';
+        toggleInfoBtn.textContent = '隱藏全球統計';
+    } else {
+        infoBox.style.display = 'none';
+        toggleInfoBtn.textContent = '顯示全球統計';
+    }
+});
+
+// 標籤頁切換
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        const tabId = this.getAttribute('data-tab');
+        
+        // 移除所有標籤頁和內容的活動狀態
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        // 激活當前標籤頁和內容
+        this.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+        
+        // 如果切換到年齡層標籤，更新圖表大小
+        if (tabId === 'tab-age' && ageDistributionChart) {
+            setTimeout(() => ageDistributionChart.resize(), 100);
+        } else if (tabId === 'tab-years' && yearsChart) {
+            setTimeout(() => yearsChart.resize(), 100);
+        }
+    });
+});
+
+// 關閉國家詳情面板
+document.getElementById('detail-close').addEventListener('click', function() {
+    document.getElementById('country-detail').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+});
+
+document.getElementById('overlay').addEventListener('click', function() {
+    document.getElementById('country-detail').style.display = 'none';
+    document.getElementById('overlay').style.display = 'none';
+});
+}
+
+// 初始化
+function initialize() {
+    initCountryList();
+    updateMap();
+    initEventListeners();
+
+    // 處理窗口調整大小
+    window.addEventListener('resize', function() {
+        if (yearsChart) yearsChart.resize();
+        if (ageDistributionChart) ageDistributionChart.resize();
+    });
+}
+
+// 頁面加載完成後初始化
+window.addEventListener('load', initialize);
+</script>
+</body>
+</html>
