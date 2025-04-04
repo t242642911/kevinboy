@@ -1,0 +1,1370 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>劇本殺三維沉浸度評分系統</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            /* 主要配色 */
+            --env-primary: #2389da;
+            --env-secondary: #12679a;
+            --env-light: #e6f4ff;
+            --emo-primary: #e85e85;
+            --emo-secondary: #b44165;
+            --emo-light: #ffe6ee;
+            --soc-primary: #8e44ad;
+            --soc-secondary: #6c3483;
+            --soc-light: #f3e6ff;
+            
+            /* 通用色彩 */
+            --bg-color: #f9fafc;
+            --card-bg: #ffffff;
+            --text-dark: #2c3e50;
+            --text-medium: #5d6778;
+            --text-light: #8795a5;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.07);
+            --border-radius: 16px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--env-primary), var(--emo-primary), var(--soc-primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 1rem;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: var(--text-medium);
+            max-width: 700px;
+            margin: 0 auto;
+            animation: fadeIn 1.2s ease-out;
+        }
+
+        .immersion-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .immersion-card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        .immersion-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .icon-container {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .env-header .icon-container {
+            background: linear-gradient(135deg, var(--env-primary), var(--env-secondary));
+        }
+
+        .emo-header .icon-container {
+            background: linear-gradient(135deg, var(--emo-primary), var(--emo-secondary));
+        }
+
+        .soc-header .icon-container {
+            background: linear-gradient(135deg, var(--soc-primary), var(--soc-secondary));
+        }
+
+        .title-area {
+            flex: 1;
+        }
+
+        .title-area h2 {
+            font-size: 1.4rem;
+            margin-bottom: 0.3rem;
+            font-weight: 700;
+        }
+
+        .env-header h2 {
+            color: var(--env-primary);
+        }
+
+        .emo-header h2 {
+            color: var(--emo-primary);
+        }
+
+        .soc-header h2 {
+            color: var(--soc-primary);
+        }
+
+        .title-area p {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        .card-content {
+            padding: 0 1.5rem 1.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .rating-description {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 1.2rem;
+            margin-bottom: 1.5rem;
+            flex: 1;
+        }
+
+        .env-description {
+            background-color: var(--env-light);
+        }
+
+        .emo-description {
+            background-color: var(--emo-light);
+        }
+
+        .soc-description {
+            background-color: var(--soc-light);
+        }
+
+        .rating-level {
+            margin-bottom: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .level-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+            font-weight: 600;
+        }
+
+        .env-description .level-title {
+            color: var(--env-primary);
+        }
+
+        .emo-description .level-title {
+            color: var(--emo-primary);
+        }
+
+        .soc-description .level-title {
+            color: var(--soc-primary);
+        }
+
+        .level-title .level-stars {
+            margin-left: auto;
+            font-size: 1rem;
+            letter-spacing: 2px;
+        }
+
+        .env-description .level-stars {
+            color: var(--env-primary);
+        }
+
+        .emo-description .level-stars {
+            color: var(--emo-primary);
+        }
+
+        .soc-description .level-stars {
+            color: var(--soc-primary);
+        }
+
+        .level-description {
+            font-size: 0.9rem;
+            color: var(--text-medium);
+        }
+
+        .star-rating {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .rating-label {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .env-rating .rating-label {
+            color: var(--env-primary);
+        }
+
+        .emo-rating .rating-label {
+            color: var(--emo-primary);
+        }
+
+        .soc-rating .rating-label {
+            color: var(--soc-primary);
+        }
+
+        .stars-container {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .star-label {
+            cursor: pointer;
+            display: inline-block;
+            font-size: 2rem;
+            transition: var(--transition);
+        }
+
+        .env-rating .star-label {
+            color: rgba(35, 137, 218, 0.2);
+        }
+
+        .emo-rating .star-label {
+            color: rgba(232, 94, 133, 0.2);
+        }
+
+        .soc-rating .star-label {
+            color: rgba(142, 68, 173, 0.2);
+        }
+
+        .star-input {
+            display: none;
+        }
+
+        /* 從左邊開始填滿星星的樣式 */
+        .env-rating .star-input:checked ~ .star-label {
+            color: var(--env-primary);
+        }
+
+        .emo-rating .star-input:checked ~ .star-label {
+            color: var(--emo-primary);
+        }
+
+        .soc-rating .star-input:checked ~ .star-label {
+            color: var(--soc-primary);
+        }
+
+        .star-label:hover,
+        .star-label:hover ~ .star-label {
+            color: inherit !important;
+        }
+
+        .star-rating:hover .star-label {
+            color: rgba(0, 0, 0, 0.2);
+        }
+
+        .env-rating .star-rating-group:hover .star-label:hover,
+        .env-rating .star-rating-group:hover .star-label:hover ~ .star-label {
+            color: var(--env-primary) !important;
+        }
+
+        .emo-rating .star-rating-group:hover .star-label:hover,
+        .emo-rating .star-rating-group:hover .star-label:hover ~ .star-label {
+            color: var(--emo-primary) !important;
+        }
+
+        .soc-rating .star-rating-group:hover .star-label:hover,
+        .soc-rating .star-rating-group:hover .star-label:hover ~ .star-label {
+            color: var(--soc-primary) !important;
+        }
+
+        .submit-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+            animation: fadeIn 1.4s ease-out;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, var(--env-primary), var(--emo-primary), var(--soc-primary));
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.18);
+        }
+
+        .submit-btn:active {
+            transform: translateY(1px);
+        }
+
+        .result-container {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 2.5rem;
+            margin-top: 3rem;
+            display: none;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        .result-title {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .result-title h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--env-primary), var(--emo-primary), var(--soc-primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .result-box {
+            text-align: center;
+            padding: 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .env-result {
+            background-color: var(--env-light);
+        }
+
+        .emo-result {
+            background-color: var(--emo-light);
+        }
+
+        .soc-result {
+            background-color: var(--soc-light);
+        }
+
+        .total-result {
+            background-color: #f1f5f9;
+        }
+
+        .result-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .env-result .result-icon {
+            color: var(--env-primary);
+        }
+
+        .emo-result .result-icon {
+            color: var(--emo-primary);
+        }
+
+        .soc-result .result-icon {
+            color: var(--soc-primary);
+        }
+
+        .total-result .result-icon {
+            background: linear-gradient(to right, var(--env-primary), var(--emo-primary), var(--soc-primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .result-label {
+            font-size: 1rem;
+            color: var(--text-medium);
+            margin-bottom: 0.5rem;
+        }
+
+        .result-value {
+            font-size: 2.8rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .env-result .result-value {
+            color: var(--env-primary);
+        }
+
+        .emo-result .result-value {
+            color: var(--emo-primary);
+        }
+
+        .soc-result .result-value {
+            color: var(--soc-primary);
+        }
+
+        .total-result .result-value {
+            background: linear-gradient(to right, var(--env-primary), var(--emo-primary), var(--soc-primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .result-max {
+            font-size: 1rem;
+            color: var(--text-light);
+            margin-top: 0.3rem;
+        }
+
+        .evaluation-container {
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .evaluation-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.2rem;
+            text-align: center;
+            background: linear-gradient(to right, var(--env-primary), var(--emo-primary), var(--soc-primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .chart-container {
+            height: 400px;
+            margin: 0 auto 4rem;
+            max-width: 600px;
+            position: relative;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 2rem;
+        }
+
+        .evaluation-content {
+            color: var(--text-medium);
+            line-height: 1.7;
+            margin-top: 2rem;
+        }
+
+        .feedback-section {
+            margin-top: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feedback-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .feedback-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .strengths-title {
+            color: #2ecc71;
+        }
+
+        .improvements-title {
+            color: #e74c3c;
+        }
+
+        .feedback-list {
+            list-style-type: none;
+        }
+
+        .feedback-list li {
+            margin-bottom: 0.8rem;
+            padding-left: 1.5rem;
+            position: relative;
+            color: var(--text-medium);
+        }
+
+        .feedback-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.6rem;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .strengths-list li::before {
+            background-color: #2ecc71;
+        }
+
+        .improvements-list li::before {
+            background-color: #e74c3c;
+        }
+
+        .buttons-container {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .reset-btn {
+            background: none;
+            border: 2px solid var(--text-light);
+            color: var(--text-medium);
+            padding: 0.8rem 1.8rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .reset-btn:hover {
+            border-color: var(--text-dark);
+            color: var(--text-dark);
+        }
+
+        .print-btn {
+            background: linear-gradient(135deg, var(--env-secondary), var(--emo-secondary), var(--soc-secondary));
+            color: white;
+            border: none;
+            padding: 0.8rem 1.8rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .print-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .immersion-types {
+                grid-template-columns: 1fr;
+            }
+            
+            .result-summary {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+            
+            .feedback-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .buttons-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .print-btn, .reset-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .star-rating-group {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>劇本殺三維沉浸度評分系統</h1>
+            <p>本評分系統從環境沉浸、情感沉浸和社會沉浸三個維度全面評估劇本殺體驗的沉浸感</p>
+        </div>
+
+        <div class="immersion-types">
+            <!-- 環境沉浸 -->
+            <div class="immersion-card">
+                <div class="card-header env-header">
+                    <div class="icon-container">
+                        <i class="fas fa-mountain"></i>
+                    </div>
+                    <div class="title-area">
+                        <h2>環境沉浸</h2>
+                        <p>場景、道具、音效等物理環境要素</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="rating-description env-description">
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級1
+                                <span class="level-stars">&#9733;&#9734;&#9734;&#9734;&#9734;</span>
+                            </div>
+                            <div class="level-description">
+                                基礎環境：僅提供基本必需品，環境營造簡單，缺乏相關主題元素。
+                            </div>
+                        </div>
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級2
+                                <span class="level-stars">&#9733;&#9733;&#9734;&#9734;&#9734;</span>
+                            </div>
+                            <div class="level-description">
+                                基礎主題環境：有少量主題裝飾和道具，但整體環境感較薄弱。
+                            </div>
+                        </div>
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級3
+                                <span class="level-stars">&#9733;&#9733;&#9733;&#9734;&#9734;</span>
+                            </div>
+                            <div class="level-description">
+                                良好主題環境：主題元素充足，有明確的場景設定，環境布置用心。
+                            </div>
+                        </div>
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級4
+                                <span class="level-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</span>
+                            </div>
+                            <div class="level-description">
+                                沉浸式環境：環境細節豐富，道具精良考究，燈光音效配合恰當。
+                            </div>
+                        </div>
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級5
+                                <span class="level-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+                            </div>
+                            <div class="level-description">
+                                完美沉浸環境：極致的場景還原，專業級別的環境設計，全方位的感官刺激。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="star-rating env-rating">
+                        <div class="rating-label">請評分 (1-5):</div>
+                        <div class="star-rating-group">
+                            <input type="radio" id="env-5" name="environment" value="5" class="star-input">
+                            <label for="env-5" class="star-label">&#9733;</label>
+                            <input type="radio" id="env-4" name="environment" value="4" class="star-input">
+                            <label for="env-4" class="star-label">&#9733;</label>
+                            <input type="radio" id="env-3" name="environment" value="3" class="star-input">
+                            <label for="env-3" class="star-label">&#9733;</label>
+                            <input type="radio" id="env-2" name="environment" value="2" class="star-input">
+                            <label for="env-2" class="star-label">&#9733;</label>
+                            <input type="radio" id="env-1" name="environment" value="1" class="star-input">
+                            <label for="env-1" class="star-label">&#9733;</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 情感沉浸 -->
+            <div class="immersion-card">
+                <div class="card-header emo-header">
+                    <div class="icon-container">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="title-area">
+                        <h2>情感沉浸</h2>
+                        <p>劇情、角色、情緒體驗等心理層面</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="rating-description emo-description">
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級1
+                                <span class="level-stars">&#9733;&#9734;&#9734;&#9734;&#9734;</span>
+                            </div>
+                            <div class="level-description">
+                                淺層情感：劇情平淡，缺乏情感衝突，角色塑造單薄，難產生情感共鳴。
+                            </div>
+                        </div>
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級2
+                                <span class="level-stars">&#9733;&#9733;&#9734;&#9734;&#9734;</span>
+                            </div>
+                            <div class="level-description">
+                                基礎情感連接：有基本角色背景和情感設計，但情節可預測，體驗較表面。
+                            </div>
+                        </div>
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級3
+                                <span class="level-stars">&#9733;&#9733;&#9733;&#9734;&#9734;</span>
+                            </div>
+                            <div class="level-description">
+                                有效情感共鳴：角色有深度，情感設計合理，劇情有吸引力，能產生情感投入。
+                            </div>
+                        </div>
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級4
+                                <span class="level-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</span>
+                            </div>
+                            <div class="level-description">
+                                深度情感沉浸：扣人心弦的劇情，立體豐滿的角色，能產生深刻情感體驗。
+                            </div>
+                        </div>
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級5
+                                <span class="level-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+                            </div>
+                            <div class="level-description">
+                                極致情感體驗：劇情和角色達到藝術水準，產生強烈的個人情感連接。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="star-rating emo-rating">
+                        <div class="rating-label">請評分 (1-5):</div>
+                        <div class="star-rating-group">
+                            <input type="radio" id="emo-5" name="emotional" value="5" class="star-input">
+                            <label for="emo-5" class="star-label">&#9733;</label>
+                            <input type="radio" id="emo-4" name="emotional" value="4" class="star-input">
+                            <label for="emo-4" class="star-label">&#9733;</label>
+                            <input type="radio" id="emo-3" name="emotional" value="3" class="star-input">
+                            <label for="emo-3" class="star-label">&#9733;</label>
+                            <input type="radio" id="emo-2" name="emotional" value="2" class="star-input">
+                            <label for="emo-2" class="star-label">&#9733;</label>
+                            <input type="radio" id="emo-1" name="emotional" value="1" class="star-input">
+                            <label for="emo-1" class="star-label">&#9733;</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 社會沉浸 -->
+            <div class="immersion-card">
+                <div class="card-header soc-header">
+                    <div class="icon-container">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="title-area">
+                        <h2>社會沉浸</h2>
+                        <p>玩家互動、團隊協作、社交體驗</p>
+                    </div>
+                </div>
+                <div class="card-content">
+                    <div class="rating-description soc-description">
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級1
+                                <span class="level-stars">&#9733;&#9734;&#9734;&#9734;&#9734;</span>
+                            </div>
+                            <div class="level-description">
+                                低度互動：玩家互動稀少，角色間關係薄弱，社交體驗和團隊協作感缺失。
+                            </div>
+                        </div>
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級2
+                                <span class="level-stars">&#9733;&#9733;&#9734;&#9734;&#9734;</span>
+                            </div>
+                            <div class="level-description">
+                                基礎互動：有基本角色互動設計，但社交體驗不夠豐富，合作需求有限。
+                            </div>
+                        </div>
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級3
+                                <span class="level-stars">&#9733;&#9733;&#9733;&#9734;&#9734;</span>
+                            </div>
+                            <div class="level-description">
+                                有效社交體驗：角色關係網絡完善，互動機制豐富，社交體驗良好。
+                            </div>
+                        </div>
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級4
+                                <span class="level-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</span>
+                            </div>
+                            <div class="level-description">
+                                深度社交沉浸：複雜的社交關係，豐富互動機制，高度投入的社交體驗。
+                            </div>
+                        </div>
+                        <div class="rating-level">
+                            <div class="level-title">
+                                <i class="fas fa-star-half-alt"></i>
+                                等級5
+                                <span class="level-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+                            </div>
+                            <div class="level-description">
+                                完美社交沉浸：極致的社交體驗設計，令人難忘的團隊協作，互動無與倫比。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="star-rating soc-rating">
+                        <div class="rating-label">請評分 (1-5):</div>
+                        <div class="star-rating-group">
+                            <input type="radio" id="soc-5" name="social" value="5" class="star-input">
+                            <label for="soc-5" class="star-label">&#9733;</label>
+                            <input type="radio" id="soc-4" name="social" value="4" class="star-input">
+                            <label for="soc-4" class="star-label">&#9733;</label>
+                            <input type="radio" id="soc-3" name="social" value="3" class="star-input">
+                            <label for="soc-3" class="star-label">&#9733;</label>
+                            <input type="radio" id="soc-2" name="social" value="2" class="star-input">
+                            <label for="soc-2" class="star-label">&#9733;</label>
+                            <input type="radio" id="soc-1" name="social" value="1" class="star-input">
+                            <label for="soc-1" class="star-label">&#9733;</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="submit-container">
+            <button id="submitBtn" class="submit-btn">
+                <i class="fas fa-chart-pie"></i>
+                生成沉浸度分析報告
+            </button>
+        </div>
+
+        <div id="resultContainer" class="result-container">
+            <div class="result-title">
+                <h2>劇本殺沉浸度分析報告</h2>
+            </div>
+
+            <div class="result-summary">
+                <div class="result-box env-result">
+                    <div class="result-icon">
+                        <i class="fas fa-mountain"></i>
+                    </div>
+                    <div class="result-label">環境沉浸</div>
+                    <div id="envScore" class="result-value">0</div>
+                    <div class="result-max">/5分</div>
+                </div>
+
+                <div class="result-box emo-result">
+                    <div class="result-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="result-label">情感沉浸</div>
+                    <div id="emoScore" class="result-value">0</div>
+                    <div class="result-max">/5分</div>
+                </div>
+
+                <div class="result-box soc-result">
+                    <div class="result-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="result-label">社會沉浸</div>
+                    <div id="socScore" class="result-value">0</div>
+                    <div class="result-max">/5分</div>
+                </div>
+
+                <div class="result-box total-result">
+                    <div class="result-icon">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="result-label">總體沉浸度</div>
+                    <div id="totalScore" class="result-value">0</div>
+                    <div class="result-max">/15分</div>
+                </div>
+            </div>
+
+            <div class="evaluation-container">
+                <div class="evaluation-title">沉浸度分析</div>
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+
+                <div id="evaluationContent" class="evaluation-content">
+                    <!-- 評估結果將動態生成 -->
+                </div>
+
+                <div class="feedback-section">
+                    <div class="feedback-card">
+                        <div class="feedback-title strengths-title">
+                            <i class="fas fa-check-circle"></i>
+                            沉浸度優勢
+                        </div>
+                        <ul id="strengthsList" class="feedback-list strengths-list">
+                            <!-- 優勢將動態生成 -->
+                        </ul>
+                    </div>
+
+                    <div class="feedback-card">
+                        <div class="feedback-title improvements-title">
+                            <i class="fas fa-tools"></i>
+                            改進建議
+                        </div>
+                        <ul id="improvementsList" class="feedback-list improvements-list">
+                            <!-- 建議將動態生成 -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="buttons-container">
+                <button id="resetBtn" class="reset-btn">重新評分</button>
+                <button id="printBtn" class="print-btn">
+                    <i class="fas fa-print"></i>
+                    列印報告
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const submitBtn = document.getElementById('submitBtn');
+            const resultContainer = document.getElementById('resultContainer');
+            const resetBtn = document.getElementById('resetBtn');
+            const printBtn = document.getElementById('printBtn');
+            
+            // Scores elements
+            const envScoreElement = document.getElementById('envScore');
+            const emoScoreElement = document.getElementById('emoScore');
+            const socScoreElement = document.getElementById('socScore');
+            const totalScoreElement = document.getElementById('totalScore');
+            
+            // Evaluation and feedback elements
+            const evaluationContentElement = document.getElementById('evaluationContent');
+            const strengthsListElement = document.getElementById('strengthsList');
+            const improvementsListElement = document.getElementById('improvementsList');
+            
+            // Chart instance
+            let chartInstance = null;
+            
+            submitBtn.addEventListener('click', function() {
+                // Get scores
+                const envScore = getSelectedValue('environment');
+                const emoScore = getSelectedValue('emotional');
+                const socScore = getSelectedValue('social');
+                
+                if (!envScore && !emoScore && !socScore) {
+                    alert('請至少評分一個沉浸度維度');
+                    return;
+                }
+                
+                // Calculate total
+                const totalScore = (envScore || 0) + (emoScore || 0) + (socScore || 0);
+                const ratedDimensions = (envScore ? 1 : 0) + (emoScore ? 1 : 0) + (socScore ? 1 : 0);
+                
+                // Update score displays
+                envScoreElement.textContent = envScore || '未評分';
+                emoScoreElement.textContent = emoScore || '未評分';
+                socScoreElement.textContent = socScore || '未評分';
+                totalScoreElement.textContent = totalScore;
+                
+                // Generate evaluation
+                generateEvaluation(envScore, emoScore, socScore, totalScore, ratedDimensions);
+                
+                // Create or update chart
+                createRadarChart(envScore, emoScore, socScore);
+                
+                // Show results
+                resultContainer.style.display = 'block';
+                
+                // Scroll to results
+                resultContainer.scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            resetBtn.addEventListener('click', function() {
+                // Reset all radio buttons
+                document.querySelectorAll('input[type="radio"]').forEach(input => {
+                    input.checked = false;
+                });
+                
+                // Hide results
+                resultContainer.style.display = 'none';
+                
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            
+            printBtn.addEventListener('click', function() {
+                window.print();
+            });
+            
+            function getSelectedValue(name) {
+                const selected = document.querySelector(`input[name="${name}"]:checked`);
+                return selected ? parseInt(selected.value) : 0;
+            }
+            
+            function createRadarChart(envScore, emoScore, socScore) {
+                const ctx = document.getElementById('radarChart').getContext('2d');
+                
+                // Destroy previous chart if exists
+                if (chartInstance) {
+                    chartInstance.destroy();
+                }
+                
+                // Create data array with fallbacks for unrated dimensions
+                const data = [
+                    envScore || 0,
+                    emoScore || 0,
+                    socScore || 0
+                ];
+                
+                chartInstance = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['環境沉浸', '情感沉浸', '社會沉浸'],
+                        datasets: [{
+                            label: '沉浸度分數',
+                            data: data,
+                            backgroundColor: 'rgba(108, 99, 255, 0.2)',
+                            borderColor: 'rgba(108, 99, 255, 1)',
+                            pointBackgroundColor: [
+                                'rgba(35, 137, 218, 1)',
+                                'rgba(232, 94, 133, 1)',
+                                'rgba(142, 68, 173, 1)'
+                            ],
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(108, 99, 255, 1)'
+                        }]
+                    },
+                    options: {
+                        maintainAspectRatio: false,
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                padding: 10,
+                                titleFont: {
+                                    size: 14
+                                },
+                                bodyFont: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        scales: {
+                            r: {
+                                angleLines: {
+                                    display: true,
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                suggestedMin: 0,
+                                suggestedMax: 5,
+                                ticks: {
+                                    stepSize: 1,
+                                    backdropColor: 'transparent',
+                                    color: '#666',
+                                    font: {
+                                        size: 10
+                                    }
+                                },
+                                pointLabels: {
+                                    font: {
+                                        size: 16,
+                                        weight: 'bold'
+                                    },
+                                    color: '#333',
+                                    padding: 30
+                                }
+                            }
+                        },
+                        elements: {
+                            line: {
+                                tension: 0.2
+                            }
+                        }
+                    }
+                });
+            }
+            
+            function generateEvaluation(envScore, emoScore, socScore, totalScore, ratedDimensions) {
+                // Evaluation text based on total score
+                let evaluationHtml = '';
+                let overallLevel = '';
+                
+                const averageScore = ratedDimensions > 0 ? totalScore / ratedDimensions : 0;
+                
+                // 根據平均分判斷沉浸度等級
+                if (averageScore >= 4.5) {
+                    overallLevel = '卓越沉浸體驗';
+                    evaluationHtml = `<p>這是一場近乎完美的劇本殺體驗！總體沉浸度達到${totalScore}分（平均${averageScore.toFixed(1)}分），各方面都提供了極致的沉浸感受。</p>`;
+                } else if (averageScore >= 3.5) {
+                    overallLevel = '優質沉浸體驗';
+                    evaluationHtml = `<p>這是一場非常成功的劇本殺！總體沉浸度達到${totalScore}分（平均${averageScore.toFixed(1)}分），提供了豐富的沉浸體驗。</p>`;
+                } else if (averageScore >= 2.5) {
+                    overallLevel = '良好沉浸體驗';
+                    evaluationHtml = `<p>這是一場相當成功的劇本殺，總體沉浸度為${totalScore}分（平均${averageScore.toFixed(1)}分），提供了良好的沉浸感。</p>`;
+                } else if (averageScore >= 1.5) {
+                    overallLevel = '基礎沉浸體驗';
+                    evaluationHtml = `<p>這場劇本殺達到了基本的沉浸效果，總體沉浸度為${totalScore}分（平均${averageScore.toFixed(1)}分）。沉浸感受有限，存在較多改進空間。</p>`;
+                } else {
+                    overallLevel = '欠缺沉浸感';
+                    evaluationHtml = `<p>這場劇本殺的沉浸度較低，總分僅為${totalScore}分（平均${averageScore.toFixed(1)}分）。需要全面改進各個維度的沉浸設計。</p>`;
+                }
+                
+                evaluationHtml += `<p><strong>綜合評價：${overallLevel}</strong></p>`;
+                
+                // 創建一個表格來顯示各維度評分和分析
+                evaluationHtml += '<div style="margin-top:20px;margin-bottom:20px;">';
+                
+                // 添加環境沉浸評分
+                if (envScore) {
+                    evaluationHtml += `<div style="display:flex;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee;">
+                        <div style="width:120px;font-weight:bold;color:var(--env-primary);">
+                            <i class="fas fa-mountain"></i> 環境沉浸:
+                        </div>
+                        <div style="width:50px;text-align:center;font-weight:bold;color:var(--env-primary);">
+                            ${envScore}/5
+                        </div>
+                        <div style="flex:1;padding-left:15px;">`;
+                    
+                    if (envScore >= 4) {
+                        evaluationHtml += '環境設計出色，場景布置、道具和氛圍營造極具沉浸感。';
+                    } else if (envScore >= 3) {
+                        evaluationHtml += '環境沉浸度良好，主題元素充足，場景設定清晰。';
+                    } else {
+                        evaluationHtml += '環境沉浸較弱，場景布置和道具設計需要改進。';
+                    }
+                    
+                    evaluationHtml += `</div></div>`;
+                }
+                
+                // 添加情感沉浸評分
+                if (emoScore) {
+                    evaluationHtml += `<div style="display:flex;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee;">
+                        <div style="width:120px;font-weight:bold;color:var(--emo-primary);">
+                            <i class="fas fa-heart"></i> 情感沉浸:
+                        </div>
+                        <div style="width:50px;text-align:center;font-weight:bold;color:var(--emo-primary);">
+                            ${emoScore}/5
+                        </div>
+                        <div style="flex:1;padding-left:15px;">`;
+                    
+                    if (emoScore >= 4) {
+                        evaluationHtml += '情感設計深刻，角色立體豐滿，劇情扣人心弦。';
+                    } else if (emoScore >= 3) {
+                        evaluationHtml += '情感沉浸度良好，角色和劇情設計有吸引力。';
+                    } else {
+                        evaluationHtml += '情感沉浸較弱，角色和劇情需要更多深度。';
+                    }
+                    
+                    evaluationHtml += `</div></div>`;
+                }
+                
+                // 添加社會沉浸評分
+                if (socScore) {
+                    evaluationHtml += `<div style="display:flex;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid #eee;">
+                        <div style="width:120px;font-weight:bold;color:var(--soc-primary);">
+                            <i class="fas fa-users"></i> 社會沉浸:
+                        </div>
+                        <div style="width:50px;text-align:center;font-weight:bold;color:var(--soc-primary);">
+                            ${socScore}/5
+                        </div>
+                        <div style="flex:1;padding-left:15px;">`;
+                    
+                    if (socScore >= 4) {
+                        evaluationHtml += '社交體驗豐富，角色關係網絡複雜，互動機制設計精巧。';
+                    } else if (socScore >= 3) {
+                        evaluationHtml += '社會沉浸度良好，角色互動機制完善，提供良好社交體驗。';
+                    } else {
+                        evaluationHtml += '社會沉浸較弱，玩家互動有限，角色關係設計不夠豐富。';
+                    }
+                    
+                    evaluationHtml += `</div></div>`;
+                }
+                
+                evaluationHtml += '</div>';
+                
+                // Update evaluation content
+                evaluationContentElement.innerHTML = evaluationHtml;
+                
+                // Generate strengths and improvements
+                generateFeedback(envScore, emoScore, socScore);
+            }
+            
+            function generateFeedback(envScore, emoScore, socScore) {
+                // Clear previous feedback
+                strengthsListElement.innerHTML = '';
+                improvementsListElement.innerHTML = '';
+                
+                const strengths = [];
+                const improvements = [];
+                
+                // Environmental strengths and improvements
+                if (envScore) {
+                    if (envScore >= 4) {
+                        strengths.push('環境設計極具沉浸感，場景氛圍營造出色');
+                    } else if (envScore >= 3) {
+                        strengths.push('主題環境設計良好，基本滿足沉浸需求');
+                    }
+                    
+                    if (envScore <= 2) {
+                        improvements.push('提升場景布置的細節和主題性，增加更多與劇情相關的環境元素');
+                    } else if (envScore <= 3) {
+                        improvements.push('添加更多感官元素，如主題音效、燈光變化等增強環境沉浸感');
+                    }
+                }
+                
+                // Emotional strengths and improvements
+                if (emoScore) {
+                    if (emoScore >= 4) {
+                        strengths.push('情感設計深刻，角色和劇情極具感染力');
+                    } else if (emoScore >= 3) {
+                        strengths.push('角色背景和情感衝突設計有效，能引發玩家共鳴');
+                    }
+                    
+                    if (emoScore <= 2) {
+                        improvements.push('深化角色背景和動機設計，使角色更加立體豐滿');
+                    } else if (emoScore <= 3) {
+                        improvements.push('加強情感衝突和反轉，增加角色間的情感聯繫');
+                    }
+                }
+                
+                // Social strengths and improvements
+                if (socScore) {
+                    if (socScore >= 4) {
+                        strengths.push('社交互動機制出色，玩家間形成豐富的互動體驗');
+                    } else if (socScore >= 3) {
+                        strengths.push('角色關係網絡設計合理，提供良好的社交體驗');
+                    }
+                    
+                    if (socScore <= 2) {
+                        improvements.push('增加角色間的互動機制，設計更多需要合作與博弈的環節');
+                    } else if (socScore <= 3) {
+                        improvements.push('優化信息分享機制，鼓勵玩家之間更多的溝通和互動');
+                    }
+                }
+                
+                // Handle case where everything is rated high
+                if (strengths.length === 0) {
+                    strengths.push('根據評分結果，沒有特別突出的沉浸度優勢');
+                }
+                
+                // Handle case where everything is rated high
+                if (improvements.length === 0) {
+                    improvements.push('整體沉浸度表現優秀，可考慮進一步創新');
+                    improvements.push('融合新技術或創意元素，開拓沉浸體驗的新可能');
+                }
+                
+                // Add strengths to list
+                strengths.forEach(strength => {
+                    const li = document.createElement('li');
+                    li.textContent = strength;
+                    strengthsListElement.appendChild(li);
+                });
+                
+                // Add improvements to list
+                improvements.forEach(improvement => {
+                    const li = document.createElement('li');
+                    li.textContent = improvement;
+                    improvementsListElement.appendChild(li);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
