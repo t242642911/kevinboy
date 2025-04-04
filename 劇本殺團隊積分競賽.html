@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>劇本殺團隊積分競賽</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', 'Heiti SC', sans-serif;
+            background-color: #1a1a2e;
+            color: #e6e6e6;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #ff9a3c;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .scoreboard {
+            background-color: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+        
+        .team {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .team:hover {
+            transform: translateX(5px);
+        }
+        
+        .team-name {
+            font-size: 18px;
+            font-weight: bold;
+            flex: 2;
+        }
+        
+        .team-score {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ff9a3c;
+            flex: 1;
+            text-align: center;
+            background: linear-gradient(145deg, #1e2a4d, #101629);
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+        }
+        
+        .score-symbol {
+            color: #ffb74d;
+            margin: 0 5px;
+            font-size: 22px;
+        }
+        
+        .score-value {
+            font-size: 32px;
+            font-family: 'Arial', sans-serif;
+            margin: 0 5px;
+        }
+        
+        /* 提供一個分數變化的動畫 */
+        @keyframes score-change {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        
+        .score-updated {
+            animation: score-change 0.5s ease;
+        }
+        
+        .team-members {
+            font-size: 14px;
+            color: #b3b3b3;
+            margin-top: 5px;
+        }
+        
+        .team-controls {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            justify-content: flex-end;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #16213e;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 130%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            border: 1px solid #333;
+        }
+        
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #16213e transparent transparent transparent;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        button {
+            background-color: #0f3460;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .score-select {
+            padding: 6px 4px;
+            border-radius: 4px;
+            border: 1px solid #333;
+            background-color: #1a1a2e;
+            color: white;
+            margin-right: 5px;
+            font-weight: bold;
+        }
+        
+        .score-select option {
+            background-color: #1a1a2e;
+        }
+        
+        .score-select option[value="5"],
+        .score-select option[value="4"],
+        .score-select option[value="3"],
+        .score-select option[value="2"],
+        .score-select option[value="1"] {
+            color: #4CAF50;
+        }
+        
+        .score-select option[value="-5"],
+        .score-select option[value="-4"],
+        .score-select option[value="-3"],
+        .score-select option[value="-2"],
+        .score-select option[value="-1"] {
+            color: #f44336;
+        }
+        
+        .apply-score {
+            background-color: #0f3460;
+            padding: 6px 8px;
+        }
+        
+        button:hover {
+            background-color: #ff9a3c;
+        }
+        
+        button:active {
+            transform: scale(0.95);
+            background-color: #e87800;
+        }
+        
+        @keyframes reset-flash {
+            0% { background-color: #16213e; }
+            50% { background-color: #d32f2f; }
+            100% { background-color: #16213e; }
+        }
+        
+        .reset-flash {
+            animation: reset-flash 1s ease;
+        }
+        
+        .winner {
+            background-color: rgba(255, 154, 60, 0.3);
+            border-left: 5px solid #ff9a3c;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .add-team {
+            background-color: #0f3460;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        input, select {
+            padding: 8px;
+            margin-right: 10px;
+            border-radius: 4px;
+            border: 1px solid #333;
+            background-color: #1a1a2e;
+            color: white;
+        }
+        
+        .game-history {
+            background-color: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+        }
+        
+        .history-entry {
+            padding: 10px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .history-entry:last-child {
+            border-bottom: none;
+        }
+        
+        .highlight {
+            color: #ff9a3c;
+            font-weight: bold;
+        }
+        
+        .team-1 { background-color: rgba(41, 50, 80, 0.5); }
+        .team-2 { background-color: rgba(50, 41, 80, 0.5); }
+        .team-3 { background-color: rgba(80, 41, 50, 0.5); }
+        .team-4 { background-color: rgba(41, 80, 50, 0.5); }
+        .team-5 { background-color: rgba(80, 60, 41, 0.5); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎭 劇本殺團隊積分競賽 🏆</h1>
+        
+        <div class="controls">
+            <button id="sortBtn">按積分排序</button>
+            <button id="resetBtn" style="background-color: #d32f2f; font-weight: bold;" onclick="resetAllScores()">重置所有積分</button>
+            <select id="gameSelect">
+                <option value="">選擇劇本...</option>
+                <option value="絕密檔案">絕密檔案</option>
+                <option value="夜半歌聲">夜半歌聲</option>
+                <option value="無間道">無間道</option>
+                <option value="貓面公爵">貓面公爵</option>
+                <option value="恐怖公寓">恐怖公寓</option>
+            </select>
+        </div>
+        
+        <div class="scoreboard" style="margin-bottom: 30px; background-color: #0f3460; padding: 20px; border-radius: 10px;">
+            <h3 style="color: #ff9a3c; margin-top: 0;">積分規則說明</h3>
+            
+            <div style="display: flex; margin-bottom: 20px;">
+                <div style="flex: 1; background-color: rgba(0, 255, 0, 0.1); padding: 15px; border-radius: 8px; margin-right: 10px; border-left: 4px solid #4CAF50;">
+                    <h4 style="margin-top: 0; color: #4CAF50;">加分參考 (+1 至 +5分)</h4>
+                    <ul style="padding-left: 20px; margin-bottom: 0;">
+                        <li><strong>+5分</strong>: 完美推理與破案，洞悉所有細節</li>
+                        <li><strong>+4分</strong>: 正確指認兇手並解釋大部分動機</li>
+                        <li><strong>+3分</strong>: 找出關鍵線索並正確解讀</li>
+                        <li><strong>+2分</strong>: 良好的角色扮演，符合角色設定</li>
+                        <li><strong>+1分</strong>: 積極參與，提供有價值的觀點</li>
+                    </ul>
+                </div>
+                
+                <div style="flex: 1; background-color: rgba(255, 0, 0, 0.1); padding: 15px; border-radius: 8px; margin-left: 10px; border-left: 4px solid #f44336;">
+                    <h4 style="margin-top: 0; color: #f44336;">扣分參考 (-1 至 -5分)</h4>
+                    <ul style="padding-left: 20px; margin-bottom: 0;">
+                        <li><strong>-1分</strong>: 細微的推理邏輯錯誤</li>
+                        <li><strong>-2分</strong>: 角色扮演偏離設定</li>
+                        <li><strong>-3分</strong>: 遺漏或誤解重要線索</li>
+                        <li><strong>-4分</strong>: 錯誤指認兇手或動機</li>
+                        <li><strong>-5分</strong>: 完全誤解劇情或違反遊戲規則</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <p style="text-align: center; margin-bottom: 0; color: #b3b3b3; font-style: italic;">註：裁判可根據實際表現，在-5至+5分範圍內自由評分。</p>
+        </div>
+        
+        <div class="add-team">
+            <h3>新增團隊</h3>
+            <input type="text" id="teamName" placeholder="團隊名稱">
+            <input type="text" id="teamMembers" placeholder="成員 (用逗號分隔)">
+            <button id="addTeamBtn">新增團隊</button>
+            <span style="display: inline-block; margin-left: 10px; font-size: 14px; color: #b3b3b3;">※ 新團隊初始積分為0</span>
+        </div>
+        
+        <div class="scoreboard" id="scoreboard">
+            <!-- Teams will be added here dynamically -->
+        </div>
+        
+        <div class="game-history">
+            <h3>遊戲記錄</h3>
+            <div id="history" style="min-height: 100px;">
+                <!-- 歷史記錄將會在這裡顯示 -->
+                <div class="history-entry">載入記錄中...</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 確保DOM完全載入後再執行腳本
+        document.addEventListener('DOMContentLoaded', function() {
+        try {
+            // 初始化調試日誌
+            console.log("劇本殺積分系統初始化開始");
+        
+            // Initial teams data
+            let teams = [
+                { id: 1, name: "推理大師", score: 120, members: "宇澤, 雨晴, 天翔, 雲煦", games: ["絕密檔案", "貓面公爵"] },
+                { id: 2, name: "劇本解謎者", score: 140, members: "翊宸, 鈺瑩, 淩風, 書嫻", games: ["夜半歌聲", "無間道"] },
+                { id: 3, name: "神探聯盟", score: 95, members: "明軒, 欣怡, 哲瀚, 雅萱", games: ["恐怖公寓"] },
+                { id: 4, name: "真相追尋者", score: 115, members: "子墨, 雪琪, 思辰, 蘭芝", games: ["無間道", "絕密檔案"] },
+            ];
+            
+            // Game history
+            let gameHistory = [
+                { date: "2025-03-30", game: "絕密檔案", winner: "推理大師", points: 70, reason: "成功破案與精準分析案情" },
+                { date: "2025-03-28", game: "無間道", winner: "劇本解謎者", points: 85, reason: "完美角色扮演與正確推理動機" },
+                { date: "2025-03-25", game: "恐怖公寓", winner: "神探聯盟", points: 65, reason: "發現隱藏線索" },
+                { date: "2025-03-22", game: "貓面公爵", winner: "推理大師", points: 50, reason: "正確推理兇手身份" },
+                { date: "2025-03-20", game: "夜半歌聲", winner: "劇本解謎者", points: 55, reason: "出色的角色扮演" },
+                { date: "2025-03-18", game: "無間道", winner: "真相追尋者", points: 75, reason: "完美解構案件邏輯" },
+                { date: "2025-03-15", game: "絕密檔案", winner: "真相追尋者", points: 40, reason: "發現關鍵線索" },
+            ];
+            
+            // Render teams
+            function renderTeams() {
+                const scoreboard = document.getElementById('scoreboard');
+                scoreboard.innerHTML = '';
+                
+                teams.forEach((team, index) => {
+                    const teamElement = document.createElement('div');
+                    teamElement.className = `team team-${team.id % 5 + 1}`;
+                    if (index === 0 && document.getElementById('sortBtn').innerText === "按團隊名稱排序") {
+                        teamElement.classList.add('winner');
+                    }
+                    
+                    teamElement.innerHTML = `
+                        <div>
+                            <div class="team-name">${team.name}</div>
+                            <div class="team-members">成員: ${team.members}</div>
+                            <div class="team-members">參與劇本: ${team.games.join(', ')}</div>
+                        </div>
+                        <div class="team-score" id="score-team-${team.id}">
+                            <span class="score-symbol">🎭</span>
+                            <span class="score-value">${team.score}</span>
+                            <span class="score-symbol">🎭</span>
+                        </div>
+                        <div class="team-controls">
+                            <div class="tooltip">
+                                <select class="score-select" data-id="${team.id}">
+                                    <option value="-5">-5</option>
+                                    <option value="-4">-4</option>
+                                    <option value="-3">-3</option>
+                                    <option value="-2">-2</option>
+                                    <option value="-1">-1</option>
+                                    <option value="0" selected>0</option>
+                                    <option value="1">+1</option>
+                                    <option value="2">+2</option>
+                                    <option value="3">+3</option>
+                                    <option value="4">+4</option>
+                                    <option value="5">+5</option>
+                                </select>
+                                <button class="apply-score" data-id="${team.id}">評分</button>
+                                <div class="tooltiptext">
+                                    <strong>評分參考:</strong>
+                                    <ul style="margin: 5px 0 5px 15px; padding: 0;">
+                                        <li>+5: 完美推理、破案</li>
+                                        <li>+3~4: 找出關鍵線索</li>
+                                        <li>+1~2: 良好角色扮演</li>
+                                        <li>-1~-2: 推理小失誤</li>
+                                        <li>-3~-4: 遺漏重要線索</li>
+                                        <li>-5: 完全誤解劇情</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    scoreboard.appendChild(teamElement);
+                });
+                
+                // Add event listeners for the new scoring system
+                document.querySelectorAll('.apply-score').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const teamId = parseInt(button.getAttribute('data-id'));
+                        const team = teams.find(t => t.id === teamId);
+                        
+                        // Get the selected score value
+                        const selectElement = button.parentElement.querySelector('.score-select');
+                        const scoreValue = parseInt(selectElement.value);
+                        
+                        // Update team score
+                        team.score += scoreValue;
+                        
+                        // 直接更新DOM中的分數顯示，避免重新渲染整個列表
+                        const scoreElement = button.closest('.team').querySelector('.team-score');
+                        const scoreValueElement = scoreElement.querySelector('.score-value');
+                        
+                        scoreValueElement.textContent = team.score;
+                        
+                        // 添加動畫效果
+                        scoreElement.classList.remove('score-updated');
+                        void scoreElement.offsetWidth; // 觸發重排，重置動畫
+                        scoreElement.classList.add('score-updated');
+                        
+                        // Generate appropriate reason based on score value
+                        let reason = '';
+                        if (scoreValue === 5) reason = "完美推理與破案";
+                        else if (scoreValue === 4) reason = "正確指認兇手並解釋動機";
+                        else if (scoreValue === 3) reason = "找出關鍵線索並正確解讀";
+                        else if (scoreValue === 2) reason = "良好的角色扮演";
+                        else if (scoreValue === 1) reason = "積極參與討論";
+                        else if (scoreValue === -1) reason = "細微的推理邏輯錯誤";
+                        else if (scoreValue === -2) reason = "角色扮演偏離設定";
+                        else if (scoreValue === -3) reason = "遺漏或誤解重要線索";
+                        else if (scoreValue === -4) reason = "錯誤指認兇手或動機";
+                        else if (scoreValue === -5) reason = "完全誤解劇情";
+                        else reason = "其他表現";
+                        
+                        // Add to history
+                        const today = new Date().toISOString().split('T')[0];
+                        const selectedGame = document.getElementById('gameSelect').value || "未指定劇本";
+                        if (selectedGame !== "選擇劇本...") {
+                            if (scoreValue > 0 && !team.games.includes(selectedGame)) {
+                                team.games.push(selectedGame);
+                            }
+                            
+                            gameHistory.unshift({
+                                date: today,
+                                game: selectedGame,
+                                winner: team.name,
+                                points: scoreValue,
+                                reason: reason
+                            });
+                            
+                            renderHistory();
+                        }
+                        
+                        // Reset selection to 0
+                        selectElement.value = "0";
+                    });
+                });
+            }
+            
+            // Render game history
+            function renderHistory() {
+                const historyContainer = document.getElementById('history');
+                
+                // 新增錯誤檢查
+                if (!historyContainer) {
+                    console.error("找不到歷史記錄容器元素!");
+                    return;
+                }
+                
+                historyContainer.innerHTML = '';
+                
+                // 如果沒有歷史記錄，顯示提示訊息
+                if (gameHistory.length === 0) {
+                    historyContainer.innerHTML = '<div class="history-entry">暫無遊戲記錄</div>';
+                    return;
+                }
+                
+                // 添加調試日誌
+                console.log("渲染歷史記錄，共有 " + gameHistory.length + " 條記錄");
+                
+                gameHistory.slice(0, 10).forEach((entry, index) => {
+                    // 調試日誌
+                    console.log(`渲染歷史記錄項目 ${index}:`, entry);
+                    
+                    const historyElement = document.createElement('div');
+                    historyElement.className = 'history-entry';
+                    
+                    // 確保所有必要的屬性都存在
+                    const date = entry.date || '未知日期';
+                    const game = entry.game || '未知劇本';
+                    const team = entry.winner || '未知團隊';
+                    const points = entry.points || 0;
+                    const reason = entry.reason || '';
+                    
+                    // 判斷是加分還是扣分
+                    const pointsDisplay = points > 0 ? 
+                        `<span class="highlight">+${points}</span>` : 
+                        (points < 0 ? `<span style="color: #ff6b6b">-${Math.abs(points)}</span>` : `<span>${points}</span>`);
+                    
+                    const reasonText = reason ? `<span class="highlight">"${reason}"</span>` : '';
+                    
+                    historyElement.innerHTML = `
+                        <span>${date}</span> - 
+                        劇本: <span class="highlight">${game}</span> - 
+                        團隊: <span class="highlight">${team}</span> - 
+                        ${pointsDisplay} 分 
+                        ${reasonText ? '- 理由: ' + reasonText : ''}
+                    `;
+                    
+                    historyContainer.appendChild(historyElement);
+                });
+            }
+            
+            // Add event listeners
+            document.getElementById('sortBtn').addEventListener('click', () => {
+                const sortBtn = document.getElementById('sortBtn');
+                
+                if (sortBtn.innerText === "按積分排序") {
+                    teams.sort((a, b) => a.name.localeCompare(b.name));
+                    sortBtn.innerText = "按團隊名稱排序";
+                } else {
+                    teams.sort((a, b) => b.score - a.score);
+                    sortBtn.innerText = "按積分排序";
+                }
+                
+                renderTeams();
+            });
+            
+            // 重置所有積分的函式
+            function resetAllScores() {
+                // 明確地更新每個團隊的積分為0
+                for(let i = 0; i < teams.length; i++) {
+                    teams[i].score = 0;
+                    
+                    // 直接更新DOM中的分數顯示
+                    const scoreElement = document.getElementById(`score-team-${teams[i].id}`);
+                    if (scoreElement) {
+                        const scoreValueElement = scoreElement.querySelector('.score-value');
+                        if (scoreValueElement) {
+                            scoreValueElement.textContent = '0';
+                            
+                            // 添加動畫效果
+                            scoreElement.classList.remove('score-updated');
+                            void scoreElement.offsetWidth; // 觸發重排，重置動畫
+                            scoreElement.classList.add('score-updated');
+                        }
+                    }
+                }
+                
+                // 添加重置記錄到遊戲歷史
+                const today = new Date().toISOString().split('T')[0];
+                gameHistory.unshift({
+                    date: today,
+                    game: "系統操作",
+                    winner: "所有團隊",
+                    points: 0,
+                    reason: "積分重置"
+                });
+                
+                // 更新歷史記錄
+                renderHistory();
+                
+                // 顯示成功訊息
+                alert("所有團隊積分已成功重置為0！");
+                
+                console.log("積分重置完成");
+            }
+            
+            // 讓重置按鈕可以全局訪問
+            window.resetAllScores = resetAllScores;
+            
+            document.getElementById('addTeamBtn').addEventListener('click', () => {
+                const teamName = document.getElementById('teamName').value.trim();
+                const teamMembers = document.getElementById('teamMembers').value.trim();
+                
+                if (teamName && teamMembers) {
+                    const newId = teams.length > 0 ? Math.max(...teams.map(t => t.id)) + 1 : 1;
+                    teams.push({
+                        id: newId,
+                        name: teamName,
+                        score: 0,
+                        members: teamMembers,
+                        games: []
+                    });
+                    
+                    document.getElementById('teamName').value = '';
+                    document.getElementById('teamMembers').value = '';
+                    
+                    renderTeams();
+                } else {
+                    alert('請填寫團隊名稱和成員！');
+                }
+            });
+            
+            // Initial render
+            teams.sort((a, b) => b.score - a.score);  // Sort by score initially
+            renderTeams();
+            renderHistory();
+            
+            console.log("劇本殺積分系統已成功初始化");
+        } catch (error) {
+            console.error("初始化過程中發生錯誤:", error);
+        }
+        }); // 關閉DOMContentLoaded事件監聽器
+    </script>
+</body>
+</html>
