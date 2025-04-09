@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正版與盜版劇本成本收益比較</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.10.4/gsap.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        :root {
+            --original-primary: #8ed1fc; /* 修改為淺藍色 */
+            --original-secondary: #60b5e4;
+            --original-highlight: #a8dcfd;
+            --pirated-primary: #ff99cc; /* 修改為粉紅色 */
+            --pirated-secondary: #ff6699;
+            --pirated-highlight: #ffb8dd;
+            --neutral-dark: #212529;
+            --neutral-mid: #6c757d;
+            --neutral-light: #f8f9fa;
+            --background: #f0f7ff;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: var(--background);
+            background-image: linear-gradient(135deg, #f5f7fa 0%, #d1e6ff 100%);
+            color: var(--neutral-dark);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+        }
+        
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 20px 0 30px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--neutral-dark);
+            position: relative;
+        }
+        
+        .header-gradient {
+            position: relative;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--original-primary), var(--pirated-primary));
+            border-radius: 3px;
+            margin: 0 auto 25px;
+            max-width: 550px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            color: var(--neutral-mid);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .selector-container {
+            display: flex;
+            justify-content: center;
+            margin: 25px auto;
+            max-width: 550px;
+        }
+        
+        .type-selector {
+            display: flex;
+            align-items: center;
+            padding: 12px 25px;
+            border-radius: 100px;
+            margin: 0 15px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .type-selector-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .original-selector {
+            background-color: rgba(142, 209, 252, 0.1);
+            color: var(--original-secondary);
+            border: 1px solid rgba(142, 209, 252, 0.3);
+        }
+        
+        .original-selector .type-selector-icon {
+            background: var(--original-primary);
+            box-shadow: 0 0 10px rgba(168, 220, 253, 0.5);
+        }
+        
+        .pirated-selector {
+            background-color: rgba(255, 153, 204, 0.1);
+            color: var(--pirated-secondary);
+            border: 1px solid rgba(255, 153, 204, 0.3);
+        }
+        
+        .pirated-selector .type-selector-icon {
+            background: var(--pirated-primary);
+            box-shadow: 0 0 10px rgba(255, 184, 221, 0.5);
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px var(--shadow);
+            padding: 25px;
+            margin-bottom: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+        
+        .card-header {
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .card-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: inline-block;
+            padding-bottom: 8px;
+            position: relative;
+        }
+        
+        .card-header h2::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--original-primary), var(--pirated-primary));
+            border-radius: 2px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 380px;
+            margin-bottom: 15px;
+        }
+        
+        .legend-container {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 0 20px 10px;
+            padding: 8px 16px;
+            border-radius: 30px;
+            transition: transform 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .legend-item:hover {
+            transform: translateY(-2px);
+        }
+        
+        .legend-original {
+            background: rgba(142, 209, 252, 0.1);
+            border: 1px solid rgba(142, 209, 252, 0.3);
+        }
+        
+        .legend-pirated {
+            background: rgba(255, 153, 204, 0.1);
+            border: 1px solid rgba(255, 153, 204, 0.3);
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            margin-right: 10px;
+            border-radius: 50%;
+        }
+        
+        .legend-original .legend-color {
+            background: var(--original-primary);
+            box-shadow: 0 0 8px rgba(168, 220, 253, 0.5);
+        }
+        
+        .legend-pirated .legend-color {
+            background: var(--pirated-primary);
+            box-shadow: 0 0 8px rgba(255, 184, 221, 0.5);
+        }
+        
+        .legend-label {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        
+        .legend-original .legend-label {
+            color: var(--original-secondary);
+        }
+        
+        .legend-pirated .legend-label {
+            color: var(--pirated-secondary);
+        }
+        
+        .data-insights {
+            background: rgba(255,255,255,0.8);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+        
+        .insight-card {
+            padding: 15px;
+            border-radius: 12px;
+            transition: transform 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .insight-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .insight-original {
+            background: rgba(142, 209, 252, 0.1);
+            border: 1px solid rgba(142, 209, 252, 0.2);
+        }
+        
+        .insight-pirated {
+            background: rgba(255, 153, 204, 0.1);
+            border: 1px solid rgba(255, 153, 204, 0.2);
+        }
+        
+        .insight-compare {
+            background: linear-gradient(135deg, rgba(142, 209, 252, 0.05) 0%, rgba(255, 153, 204, 0.05) 100%);
+            border: 1px solid rgba(108, 117, 125, 0.2);
+        }
+        
+        .insight-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        
+        .insight-original h3 {
+            color: var(--original-secondary);
+        }
+        
+        .insight-pirated h3 {
+            color: var(--pirated-secondary);
+        }
+        
+        .insight-compare h3 {
+            color: var(--neutral-dark);
+        }
+        
+        .insight-icon {
+            margin-right: 8px;
+            font-size: 1.2rem;
+        }
+        
+        .insight-card ul {
+            list-style-type: none;
+            padding-left: 5px;
+        }
+        
+        .insight-card li {
+            position: relative;
+            padding-left: 15px;
+            margin-bottom: 5px;
+            font-size: 0.95rem;
+        }
+        
+        .insight-card li:before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        
+        .insight-original li:before {
+            color: var(--original-primary);
+        }
+        
+        .insight-pirated li:before {
+            color: var(--pirated-primary);
+        }
+        
+        .insight-compare li:before {
+            color: var(--neutral-mid);
+        }
+        
+        .key-metric {
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: var(--neutral-dark);
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 15px;
+            color: var(--neutral-mid);
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+        
+        .data-value {
+            font-weight: 600;
+            margin-left: 3px;
+        }
+        
+        .original-value {
+            color: var(--original-primary);
+        }
+        
+        .pirated-value {
+            color: var(--pirated-primary);
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .card {
+                padding: 15px;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+            
+            .insights-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* 動畫 */
+        .animate-in {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        .comparison-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        
+        .comparison-table th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .comparison-table tr:nth-child(even) {
+            background-color: rgba(0,0,0,0.02);
+        }
+        
+        .col-item {
+            text-align: left;
+            font-weight: 500;
+        }
+        
+        .col-original {
+            color: var(--original-secondary);
+            background-color: rgba(142, 209, 252, 0.05);
+        }
+        
+        .col-pirated {
+            color: var(--pirated-secondary);
+            background-color: rgba(255, 153, 204, 0.05);
+        }
+        
+        /* 數據標籤樣式 */
+        .roi-highlight {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            padding: 10px 15px;
+            border-radius: 8px;
+        }
+        
+        .original-roi {
+            background: rgba(142, 209, 252, 0.15);
+            color: var(--original-secondary);
+        }
+        
+        .pirated-roi {
+            background: rgba(255, 153, 204, 0.15);
+            color: var(--pirated-secondary);
+        }
+        
+        /* 圖表工具提示自定義 */
+        #tooltip-canvas {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            pointer-events: none;
+            padding: 10px;
+            z-index: 100;
+            display: none;
+            max-width: 250px;
+        }
+        
+        /* 生命週期標題樣式 */
+        .lifecycle-header {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .lifecycle-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--neutral-dark);
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .lifecycle-gradient {
+            height: 4px;
+            background: linear-gradient(90deg, var(--original-primary), var(--pirated-primary));
+            width: 250px;
+            margin: 0 auto;
+            border-radius: 2px;
+        }
+
+        /* 圖表標籤樣式增強 */
+        .chart-value-label {
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+        }
+        
+        /* 經濟指標顯示樣式 */
+        .economic-data-point {
+            margin-top: 10px;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .economic-value {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 5px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .original-value-tag {
+            background-color: rgba(142, 209, 252, 0.15);
+            color: var(--original-secondary);
+            border: 1px solid rgba(142, 209, 252, 0.3);
+        }
+        
+        .pirated-value-tag {
+            background-color: rgba(255, 153, 204, 0.15);
+            color: var(--pirated-secondary);
+            border: 1px solid rgba(255, 153, 204, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header animate-in">
+            <h1>正版與盜版劇本成本收益比較分析</h1>
+            <div class="header-gradient"></div>
+            <p>深入剖析劇本殺行業中正版與盜版產品在經濟與品牌價值方面的全方位對比</p>
+        </div>
+        
+        <div class="selector-container animate-in">
+            <div class="type-selector original-selector">
+                <div class="type-selector-icon"></div>
+                <span>正版劇本</span>
+            </div>
+            <div class="type-selector pirated-selector">
+                <div class="type-selector-icon"></div>
+                <span>盜版劇本</span>
+            </div>
+        </div>
+        
+        <div class="grid-container">
+            <div class="card animate-in">
+                <div class="card-header">
+                    <h2>經濟指標對比 (新台幣)</h2>
+                </div>
+                
+                <div class="legend-container">
+                    <div class="legend-item legend-original">
+                        <div class="legend-color"></div>
+                        <span class="legend-label">正版劇本</span>
+                    </div>
+                    <div class="legend-item legend-pirated">
+                        <div class="legend-color"></div>
+                        <span class="legend-label">盜版劇本</span>
+                    </div>
+                </div>
+                
+                <!-- 額外顯示柱狀圖數值的部分 -->
+                <div class="economic-data-point">
+                    <div class="economic-value original-value-tag">製作成本: NT$90,000</div>
+                    <div class="economic-value pirated-value-tag">製作成本: NT$6,000</div>
+                </div>
+                <div class="economic-data-point">
+                    <div class="economic-value original-value-tag">發行成本: NT$45,000</div>
+                    <div class="economic-value pirated-value-tag">發行成本: NT$9,000</div>
+                </div>
+                <div class="economic-data-point">
+                    <div class="economic-value original-value-tag">維護成本(年): NT$24,000</div>
+                    <div class="economic-value pirated-value-tag">維護成本(年): NT$1,500</div>
+                </div>
+                <div class="economic-data-point">
+                    <div class="economic-value original-value-tag">回本所需銷量: 38套</div>
+                    <div class="economic-value pirated-value-tag">回本所需銷量: 17套</div>
+                </div>
+                <div class="economic-data-point">
+                    <div class="economic-value original-value-tag">平均收益: NT$201,000</div>
+                    <div class="economic-value pirated-value-tag">平均收益: NT$73,500</div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="monetaryComparisonChart"></canvas>
+                </div>
+                
+                <div class="roi-container">
+                    <div class="roi-highlight original-roi">
+                        <span>正版劇本投資回報率:</span>
+                        <span>149%</span>
+                    </div>
+                    <div class="roi-highlight pirated-roi">
+                        <span>盜版劇本投資回報率:</span>
+                        <span>490%</span>
+                    </div>
+                </div>
+                
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>經濟指標</th>
+                            <th class="col-original">正版劇本</th>
+                            <th class="col-pirated">盜版劇本</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="col-item">製作成本</td>
+                            <td>NT$90,000</td>
+                            <td>NT$6,000</td>
+                        </tr>
+                        <tr>
+                            <td class="col-item">發行成本</td>
+                            <td>NT$45,000</td>
+                            <td>NT$9,000</td>
+                        </tr>
+                        <tr>
+                            <td class="col-item">維護成本(年)</td>
+                            <td>NT$24,000</td>
+                            <td>NT$1,500</td>
+                        </tr>
+                        <tr>
+                            <td class="col-item">回本所需銷量</td>
+                            <td>38套</td>
+                            <td>17套</td>
+                        </tr>
+                        <tr>
+                            <td class="col-item">平均收益</td>
+                            <td>NT$201,000</td>
+                            <td>NT$73,500</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="card animate-in">
+                <div class="card-header">
+                    <h2>質量與品牌價值比較</h2>
+                </div>
+                
+                <div class="legend-container">
+                    <div class="legend-item legend-original">
+                        <div class="legend-color"></div>
+                        <span class="legend-label">正版劇本</span>
+                    </div>
+                    <div class="legend-item legend-pirated">
+                        <div class="legend-color"></div>
+                        <span class="legend-label">盜版劇本</span>
+                    </div>
+                </div>
+                
+                <!-- 額外顯示雷達圖數值的部分 -->
+                <div class="economic-data-point">
+                    <div class="economic-value original-value-tag">品牌價值: 90分</div>
+                    <div class="economic-value pirated-value-tag">品牌價值: 10分</div>
+                </div>
+                <div class="economic-data-point">
+                    <div class="economic-value original-value-tag">長期收益: 85分</div>
+                    <div class="economic-value pirated-value-tag">長期收益: 30分</div>
+                </div>
+                <div class="economic-data-point">
+                    <div class="economic-value original-value-tag">創新潛力: 80分</div>
+                    <div class="economic-value pirated-value-tag">創新潛力: 15分</div>
+                </div>
+                <div class="economic-data-point">
+                    <div class="economic-value original-value-tag">市場競爭力: 75分</div>
+                    <div class="economic-value pirated-value-tag">市場競爭力: 45分</div>
+                </div>
+                <div class="economic-data-point">
+                    <div class="economic-value original-value-tag">用戶滿意度: 85分</div>
+                    <div class="economic-value pirated-value-tag">用戶滿意度: 30分</div>
+                </div>
+                <div class="economic-data-point">
+                    <div class="economic-value original-value-tag">法律合規性: 95分</div>
+                    <div class="economic-value pirated-value-tag">法律合規性: 10分</div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="qualityComparisonChart"></canvas>
+                </div>
+                
+                <div class="data-insights">
+                    <h3>關鍵差異分析</h3>
+                    <div class="insights-grid">
+                        <div class="insight-card insight-original">
+                            <h3>
+                                <span class="insight-icon">✓</span>
+                                正版劇本優勢
+                            </h3>
+                            <ul>
+                                <li>完整的<span class="key-metric">劇情架構</span>與豐富的角色設計</li>
+                                <li>專業團隊全程<span class="key-metric">品質把控</span></li>
+                                <li><span class="key-metric">合法授權</span>與正規銷售渠道</li>
+                                <li>完備的<span class="key-metric">售後支持</span>與社群運營</li>
+                                <li>更新迭代與IP<span class="key-metric">擴展潛力</span></li>
+                            </ul>
+                        </div>
+                        <div class="insight-card insight-pirated">
+                            <h3>
+                                <span class="insight-icon">✗</span>
+                                盜版劇本弊端
+                            </h3>
+                            <ul>
+                                <li><span class="key-metric">侵權行為</span>破壞行業生態</li>
+                                <li>劇情與道具經常存在<span class="key-metric">缺陷</span></li>
+                                <li>無法建立長期<span class="key-metric">品牌信任</span></li>
+                                <li>嚴重的<span class="key-metric">法律風險</span>與處罰</li>
+                                <li>缺乏<span class="key-metric">持續投入</span>與創新能力</li>
+                            </ul>
+                        </div>
+                        <div class="insight-card insight-compare">
+                            <h3>
+                                <span class="insight-icon">⚖️</span>
+                                長期發展對比
+                            </h3>
+                            <ul>
+                                <li>正版運營<span class="data-value original-value">3年</span>淨利潤是盜版的<span class="data-value original-value">2.7倍</span></li>
+                                <li>正版能獲得<span class="data-value original-value">60%</span>的玩家回購率</li>
+                                <li>盜版面臨<span class="data-value pirated-value">85%</span>的法律風險</li>
+                                <li>正版品牌估值可增長至初始投資的<span class="data-value original-value">5-10倍</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="lifecycle-header animate-in">
+            <h2 class="lifecycle-title">生命週期價值對比</h2>
+            <div class="lifecycle-gradient"></div>
+        </div>
+        
+        <div class="card animate-in">
+            <div class="chart-container">
+                <canvas id="lifeCycleChart"></canvas>
+            </div>
+            
+            <div class="insights-grid">
+                <div class="insight-card insight-compare">
+                    <h3>
+                        <span class="insight-icon">📊</span>
+                        3年周期總體效益
+                    </h3>
+                    <ul>
+                        <li>正版劇本：<span class="data-value original-value">NT$855,000 總收入</span>（銷量350套）</li>
+                        <li>盜版劇本：<span class="data-value pirated-value">NT$315,000 總收入</span>（銷量450套）</li>
+                        <li>正版劇本總利潤：<span class="data-value original-value">NT$477,000</span></li>
+                        <li>盜版劇本總利潤：<span class="data-value pirated-value">NT$174,000</span></li>
+                        <li>正版收入隨<span class="key-metric">時間推移穩定增長</span>，盜版劇本三年後幾乎無收入</li>
+                    </ul>
+                </div>
+                <div class="insight-card insight-compare">
+                    <h3>
+                        <span class="insight-icon">🔍</span>
+                        用戶體驗與忠誠度
+                    </h3>
+                    <ul>
+                        <li>正版劇本用戶滿意度：<span class="data-value original-value">85%</span></li>
+                        <li>盜版劇本用戶滿意度：<span class="data-value pirated-value">30%</span></li>
+                        <li>正版玩家重複購買率：<span class="data-value original-value">60%</span></li>
+                        <li>盜版玩家重複購買率：<span class="data-value pirated-value">15%</span></li>
+                        <li>正版用戶平均引薦<span class="data-value original-value">3.5位</span>新用戶，盜版僅<span class="data-value pirated-value">0.8位</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>註：本分析基於行業平均數據，實際數值可能因地區、時間和具體市場環境而有所差異。</p>
+            <p>© 2025 劇本殺產業分析報告 - 版權保護與市場健康度研究</p>
+        </div>
+    </div>
+    
+    <div id="tooltip-canvas"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 註冊 Chart.js 插件
+            Chart.register(ChartDataLabels);
+            
+            // 初始化動畫
+            const animateElements = document.querySelectorAll('.animate-in');
+            gsap.fromTo(animateElements, 
+                {opacity: 0, y: 20},
+                {opacity: 1, y: 0, duration: 0.8, stagger: 0.2, ease: "power2.out"}
+            );
+            
+            // 經濟指標對比圖 - 更改顏色以匹配參考圖片
+            const ctxMonetary = document.getElementById('monetaryComparisonChart').getContext('2d');
+            
+            // 創建更人性化的長條圖 - 修改顏色和樣式
+            const monetaryChart = new Chart(ctxMonetary, {
+                type: 'bar',
+                data: {
+                    labels: ['製作成本', '發行成本', '維護成本(年)', '平均收益'],
+                    datasets: [
+                        {
+                            label: '正版劇本',
+                            data: [90000, 45000, 24000, 201000],
+                            backgroundColor: '#8ed1fc',  // 修改為淺藍色
+                            borderColor: '#8ed1fc',      // 移除邊框差異
+                            borderWidth: 0,              // 移除邊框
+                            borderRadius: 0,             // 移除圓角
+                            hoverBackgroundColor: '#a8dcfd',
+                            barPercentage: 0.65,
+                            categoryPercentage: 0.7
+                        },
+                        {
+                            label: '盜版劇本',
+                            data: [6000, 9000, 1500, 73500],
+                            backgroundColor: '#ff99cc',  // 修改為粉紅色
+                            borderColor: '#ff99cc',      // 移除邊框差異
+                            borderWidth: 0,              // 移除邊框
+                            borderRadius: 0,             // 移除圓角
+                            hoverBackgroundColor: '#ffb8dd',
+                            barPercentage: 0.65,
+                            categoryPercentage: 0.7
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 20
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.1)',
+                                lineWidth: 1
+                            },
+                            border: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    if (value >= 1000) {
+                                        return value/1000 + 'k';
+                                    }
+                                    return value;
+                                },
+                                font: {
+                                    size: 12,
+                                    weight: 'normal'
+                                },
+                                color: '#666'
+                            },
+                            title: {
+                                display: true,
+                                text: '金額 (萬元)',
+                                font: {
+                                    size: 12,
+                                    weight: 'normal'
+                                },
+                                color: '#666',
+                                padding: {top: 10, bottom: 10}
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            border: {
+                                display: true,
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12,
+                                    weight: 'normal'
+                                },
+                                color: '#666'
+                            },
+                            title: {
+                                display: true,
+                                text: '項目',
+                                font: {
+                                    size: 12,
+                                    weight: 'normal'
+                                },
+                                color: '#666',
+                                padding: {top: 10}
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'center',
+                            labels: {
+                                boxWidth: 40,
+                                usePointStyle: false,
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#212529',
+                            bodyColor: '#212529',
+                            borderColor: 'rgba(0, 0, 0, 0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toLocaleString();
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                        // 禁用數據標籤，參考圖片中沒有顯示
+                        datalabels: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            
+            // 質量與品牌價值比較圖
+            const ctxQuality = document.getElementById('qualityComparisonChart').getContext('2d');
+            
+            const qualityChart = new Chart(ctxQuality, {
+                type: 'radar',
+                data: {
+                    labels: ['品牌價值', '長期收益', '創新潛力', '市場競爭力', '用戶滿意度', '法律合規性'],
+                    datasets: [
+                        {
+                            label: '正版劇本',
+                            data: [90, 85, 80, 75, 85, 95],
+                            backgroundColor: 'rgba(142, 209, 252, 0.3)',
+                            borderColor: '#8ed1fc',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#a8dcfd',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: '#8ed1fc',
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        },
+                        {
+                            label: '盜版劇本',
+                            data: [10, 30, 15, 45, 30, 10],
+                            backgroundColor: 'rgba(255, 153, 204, 0.3)',
+                            borderColor: '#ff99cc',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#ffb8dd',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: '#ff99cc',
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 14,
+                                    weight: '600'
+                                },
+                                color: 'rgba(0, 0, 0, 0.7)'
+                            },
+                            ticks: {
+                                backdropColor: 'transparent',
+                                callback: function(value) {
+                                    return value;
+                                },
+                                font: {
+                                    size: 11
+                                },
+                                stepSize: 20
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#212529',
+                            bodyColor: '#212529',
+                            borderColor: 'rgba(0, 0, 0, 0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
+                            usePointStyle: true,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw + '分';
+                                }
+                            }
+                        },
+                        datalabels: {
+                            display: true, // 顯示所有標籤
+                            color: function(context) {
+                                return context.datasetIndex === 0 ? '#60b5e4' : '#ff6699';
+                            },
+                            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                            borderRadius: 4,
+                            padding: 4,
+                            font: {
+                                weight: 'bold',
+                                size: 11
+                            },
+                            formatter: function(value) {
+                                return value + '分';
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // 生命週期價值對比圖
+            const ctxLifeCycle = document.getElementById('lifeCycleChart').getContext('2d');
+            
+            const lifeCycleChart = new Chart(ctxLifeCycle, {
+                type: 'line',
+                data: {
+                    labels: ['初始階段', '6個月', '1年', '1.5年', '2年', '2.5年', '3年'],
+                    datasets: [
+                        {
+                            label: '正版劇本累計利潤',
+                            data: [-135000, 15000, 141000, 264000, 360000, 435000, 477000],
+                            backgroundColor: 'rgba(142, 209, 252, 0.1)',
+                            borderColor: '#8ed1fc',
+                            borderWidth: 4,
+                            tension: 0.3,
+                            fill: true,
+                            pointBackgroundColor: '#a8dcfd',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        },
+                        {
+                            label: '盜版劇本累計利潤',
+                            data: [-15000, 48000, 90000, 114000, 138000, 156000, 174000],
+                            backgroundColor: 'rgba(255, 153, 204, 0.1)',
+                            borderColor: '#ff99cc',
+                            borderWidth: 4,
+                            tension: 0.3,
+                            fill: true,
+                            pointBackgroundColor: '#ffb8dd',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    if (value < 0) {
+                                        return '-NT$' + Math.abs(value/1000) + 'k';
+                                    }
+                                    return 'NT$' + value/1000 + 'k';
+                                },
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                },
+                                color: '#212529'
+                            },
+                            title: {
+                                display: true,
+                                text: '累計利潤 (新台幣)',
+                                font: {
+                                    size: 13,
+                                    weight: 'bold'
+                                },
+                                padding: {top: 10, bottom: 10}
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                },
+                                color: '#212529'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    size: 13,
+                                    weight: 'bold'
+                                },
+                                color: '#212529'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#212529',
+                            bodyColor: '#212529',
+                            borderColor: 'rgba(0, 0, 0, 0.1)',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        let value = context.parsed.y;
+                                        if (value >= 0) {
+                                            label += 'NT$' + value.toLocaleString();
+                                        } else {
+                                            label += '-NT$' + Math.abs(value).toLocaleString();
+                                        }
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            display: function(context) {
+                                // 只在特定點顯示標籤
+                                return context.dataIndex === 0 || context.dataIndex === 6;
+                            },
+                            color: function(context) {
+                                return context.datasetIndex === 0 ? '#60b5e4' : '#ff6699';
+                            },
+                            backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                            borderRadius: 4,
+                            padding: 4,
+                            font: {
+                                weight: 'bold',
+                                size: 12
+                            },
+                            formatter: function(value) {
+                                if (value >= 1000) {
+                                    return 'NT$' + (value/1000).toFixed(0) + 'k';
+                                } else if (value < 0) {
+                                    return '-NT$' + (Math.abs(value)/1000).toFixed(0) + 'k';
+                                }
+                                return 'NT$' + value;
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            });
+            
+            // 互動效果
+            document.querySelectorAll('.type-selector').forEach(selector => {
+                selector.addEventListener('click', function() {
+                    const isOriginal = this.classList.contains('original-selector');
+                    const datasets = [monetaryChart, qualityChart, lifeCycleChart].map(chart => chart.data.datasets);
+                    
+                    datasets.forEach(dataset => {
+                        if (isOriginal) {
+                            dataset[0].hidden = !dataset[0].hidden;
+                        } else {
+                            dataset[1].hidden = !dataset[1].hidden;
+                        }
+                    });
+                    
+                    monetaryChart.update();
+                    qualityChart.update();
+                    lifeCycleChart.update();
+                });
+            });
+            
+            // 圖例點擊事件
+            document.querySelectorAll('.legend-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const isOriginal = this.classList.contains('legend-original');
+                    const isPirated = this.classList.contains('legend-pirated');
+                    
+                    let activeChart;
+                    if (this.closest('.card').querySelector('#monetaryComparisonChart')) {
+                        activeChart = monetaryChart;
+                    } else if (this.closest('.card').querySelector('#qualityComparisonChart')) {
+                        activeChart = qualityChart;
+                    } else if (this.closest('.card').querySelector('#lifeCycleChart')) {
+                        activeChart = lifeCycleChart;
+                    }
+                    
+                    if (activeChart) {
+                        activeChart.data.datasets.forEach((dataset, index) => {
+                            if ((isOriginal && index === 0) || (isPirated && index === 1)) {
+                                const meta = activeChart.getDatasetMeta(index);
+                                meta.hidden = !meta.hidden;
+                            }
+                        });
+                        
+                        activeChart.update();
+                    }
+                });
+            });
+            
+            // 卡片懸停效果
+            document.querySelectorAll('.insight-card').forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    gsap.to(this, {
+                        boxShadow: '0 8px 20px rgba(0, 0, 0, 0.15)',
+                        y: -5,
+                        duration: 0.3
+                    });
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    gsap.to(this, {
+                        boxShadow: '0 0 0 rgba(0, 0, 0, 0)',
+                        y: 0,
+                        duration: 0.3
+                    });
+                });
+            });
+            
+            // 捲動動畫
+            if (typeof ScrollTrigger !== 'undefined') {
+                gsap.utils.toArray('.card, .lifecycle-header').forEach(element => {
+                    gsap.from(element, {
+                        opacity: 0,
+                        y: 50,
+                        duration: 0.6,
+                        scrollTrigger: {
+                            trigger: element,
+                            start: 'top 80%',
+                            end: 'top 50%',
+                            scrub: 1
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>
