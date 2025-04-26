@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>迷霧校園 - 劇本殺遊戲</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* 基本樣式與字體設定 */
+        :root {
+            --bg-color: #f3f4f6;
+            --card-bg: #1f2937;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-dark: #111827;
+            --accent-purple: #8b5cf6;
+            --accent-purple-dark: #7c3aed;
+            --accent-blue: #60a5fa;
+            --accent-blue-dark: #3b82f6;
+            --keyword-blue: var(--accent-blue);
+            --keyword-red: #f87171;
+            --tag-border: #6b7280;
+            --tag-text: #9ca3af;
+            --shadow-color-light: rgba(0, 0, 0, 0.08);
+            --shadow-color-medium: rgba(0, 0, 0, 0.12);
+        }
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            /* **修改：主要字體仍為 Noto Sans TC** */
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            overscroll-behavior: none;
+            background-color: var(--bg-color);
+            font-size: 16px;
+            color: var(--text-dark);
+        }
+        #game-container {
+             min-height: 100vh;
+             display: flex;
+             flex-direction: column;
+        }
+        /* 關鍵字高亮 */
+        .keyword { color: var(--keyword-blue); font-weight: bold; }
+        .choice-keyword { color: var(--keyword-red); font-weight: bold; }
+
+        /* 標題樣式 */
+        /* **修改：為遊戲標題和章節標題加入 Noto Serif TC** */
+        .game-title-gradient {
+            font-family: 'Noto Serif TC', serif; /* 標題使用襯線體 */
+            background: linear-gradient(to right, var(--accent-blue), var(--accent-blue-dark));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+            filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.1));
+        }
+        .chapter-title-style {
+            font-family: 'Noto Serif TC', serif; /* 標題使用襯線體 */
+            color: #e5e7eb; text-shadow: 1px 1px 3px rgba(0,0,0,0.6); font-size: 1.85rem;
+        }
+
+        /* 對話框樣式 */
+        .dialogue-box {
+            border: 1px solid #e0e0e0; padding: 1.1rem; margin-bottom: 1.1rem;
+            /* **修改：增加圓角和微調陰影** */
+            border-radius: 12px; /* 圓角更大 */
+            background-color: rgba(255, 255, 255, 0.97);
+            box-shadow: 0 6px 18px var(--shadow-color-light); /* 陰影調整 */
+            line-height: 1.8; font-size: 1.08rem;
+            animation: fadeIn 0.5s ease-out;
+            position: relative;
+            padding-right: 3rem;
+         }
+        .dialogue-box.player { border-left: 5px solid var(--accent-blue); background-color: rgba(239, 246, 255, 0.97); }
+        .dialogue-box.npc { border-left: 5px solid #9ca3af; background-color: rgba(249, 250, 251, 0.97); }
+        .character-name { font-weight: 700; margin-bottom: 0.6rem; font-size: 1.15rem; }
+        .dialogue-box.player .character-name { color: var(--accent-blue-dark); }
+        .dialogue-box.npc .character-name { color: #374151; }
+        /* 播放按鈕樣式 */
+        .speak-button {
+            position: absolute; top: 0.75rem; right: 0.75rem; background: none;
+            border: none; font-size: 1.5rem; cursor: pointer; color: #9ca3af;
+            transition: color 0.2s ease, transform 0.2s ease; padding: 0.25rem; line-height: 1;
+        }
+        .speak-button:hover { color: var(--accent-purple); transform: scale(1.1); }
+        .speak-button:active { transform: scale(0.95); }
+        .speak-button.speaking { color: var(--accent-purple); animation: pulse 1.5s infinite ease-in-out; }
+        .speak-button.paused { color: #fbbf24; }
+
+        /* 按鈕樣式 */
+        .btn { display: inline-block; padding: 0.8rem 1.6rem; margin: 0.5rem; border-radius: 8px; background-image: linear-gradient(to right, var(--accent-purple), var(--accent-purple-dark)); color: white; text-align: center; cursor: pointer; transition: all 0.3s ease; font-weight: bold; box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06); border: none; font-size: 1rem; }
+        /* **修改：微調 Hover 效果** */
+        .btn:hover {
+            background-image: linear-gradient(to right, var(--accent-purple-dark), #6d28d9);
+            box-shadow: 0 7px 14px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08); /* 陰影變化 */
+            transform: translateY(-3px); /* 上移更多 */
+        }
+        .btn:active { transform: translateY(-1px); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); } /* active 時下壓少一點 */
+        .btn-secondary { background-image: linear-gradient(to right, #6b7280, #9ca3af); }
+        .btn-secondary:hover { background-image: linear-gradient(to right, #4b5563, #6b7280); }
+        .btn-confirm { background-image: linear-gradient(to right, #10b981, #34d399); }
+        .btn-confirm:hover { background-image: linear-gradient(to right, #059669, #10b981); }
+        .btn-disabled { background-image: none; background-color: #d1d5db; cursor: not-allowed; box-shadow: none; transform: none; }
+        .btn-small { padding: 5px 10px; font-size: 0.875rem; margin: 0; }
+        .btn-select-char { width: 100%; margin-top: auto; padding: 0.7rem 1rem; font-size: 0.95rem;}
+        /* 開始畫面資訊文字 */
+        .start-info-text { font-size: 1.15rem; color: #cbd5e1; margin-bottom: 0.6rem; }
+        .start-info-text span { font-weight: bold; color: #f1f5f9; }
+        /* 角色卡片樣式 */
+        #character-options { display: flex; flex-direction: column; gap: 1.75rem; width: 100%; max-width: 650px; margin: 0 auto; padding-bottom: 3rem; }
+        .character-card { background-color: var(--card-bg); border-radius: 10px; padding: 0; margin: 0; box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08); transition: transform 0.3s ease, box-shadow 0.3s ease, border 0.3s ease; cursor: pointer; border: 2px solid transparent; display: flex; overflow: hidden; align-items: stretch; }
+        .character-card:hover { transform: scale(1.03); box-shadow: 0 18px 35px rgba(0, 0, 0, 0.15), 0 7px 12px rgba(0, 0, 0, 0.1); }
+        .character-card.selected { border-color: var(--accent-purple); box-shadow: 0 15px 30px rgba(139, 92, 246, 0.2), 0 5px 10px rgba(139, 92, 246, 0.15); }
+        .character-image-container { flex-shrink: 0; width: 160px; }
+        .character-image-container img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .character-info-container { flex-grow: 1; padding: 1.5rem 1.75rem; display: flex; flex-direction: column; color: var(--text-secondary); }
+        .character-info-container h3 { font-family: 'Noto Serif TC', serif; font-size: 1.5rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.8rem; text-align: left; } /* 角色名稱也用襯線體 */
+        .character-description { font-size: 1rem; line-height: 1.7; color: var(--text-secondary); font-weight: 400; margin-bottom: 1.2rem; text-align: left; flex-grow: 1; }
+        .character-tags { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-bottom: 1.5rem; justify-content: flex-start; }
+        .keyword-tag-box { background-color: rgba(255, 255, 255, 0.08); color: var(--tag-text); padding: 6px 14px; border: 1px solid var(--tag-border); border-radius: 6px; font-size: 0.85rem; font-weight: 500; white-space: nowrap; transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
+        .keyword-tag-box:hover { background-color: rgba(255, 255, 255, 0.15); color: #e5e7eb; border-color: #9ca3af; }
+
+        /* **修改：彈出視窗加入淡入淡出效果** */
+        .modal {
+            /* display: none; 改用 visibility 和 opacity 控制 */
+            visibility: hidden; /* 初始隱藏 */
+            opacity: 0; /* 初始透明 */
+            position: fixed; z-index: 1000;
+            left: 0; top: 0; width: 100%; height: 100%; overflow: auto;
+            background-color: rgba(0,0,0,0.6); /* 背景稍微調暗一點 */
+            /* 加入過渡效果 */
+            transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+            /* animation: fadeInModal 0.3s ease-out; /* 移除舊動畫 */ */
+        }
+        /* 新增 active 狀態 */
+        .modal.active {
+            visibility: visible; /* 顯示 */
+            opacity: 1; /* 不透明 */
+        }
+        .modal-content {
+            background-color: #ffffff; padding: 25px; border: none;
+            border-radius: 12px; position: relative;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+            width: 90%;
+            /* 加入內容的過渡效果 */
+            transform: translateY(-20px); /* 初始稍微向上移 */
+            opacity: 0; /* 初始透明 */
+            transition: opacity 0.3s ease-out 0.1s, transform 0.3s ease-out 0.1s; /* 延遲一點出現 */
+        }
+        .modal.active .modal-content {
+            transform: translateY(0); /* 恢復原位 */
+            opacity: 1; /* 不透明 */
+        }
+        /* 筆記本特定樣式 */
+        #notebook-modal .modal-content {
+             margin: 10% auto;
+             max-width: 600px;
+        }
+        #clue-list li { margin-bottom: 0.75rem; font-size: 1.05rem; color: #374151; }
+        /* 設定視窗特定樣式 */
+        #settings-modal .modal-content {
+            position: absolute;
+            top: 4rem; right: 1rem;
+            margin: 0;
+            max-width: 350px; width: auto;
+        }
+        .settings-controls-grid { display: grid; gap: 0.75rem; }
+        /* ... (設定視窗內其他樣式保持不變) ... */
+        .settings-group { display: flex; align-items: center; gap: 0.5rem; min-height: 2.25rem; }
+        .settings-group label { font-size: 0.9rem; color: #374151; width: 50px; text-align: right; flex-shrink: 0; }
+        .settings-group .control-container { display: flex; flex-grow: 1; align-items: center; gap: 0.5rem; min-width: 0; }
+        .settings-group .control-container > input[type="range"], .settings-group .control-container > select { flex-grow: 1; min-width: 50px; width: 100%; box-sizing: border-box; }
+        .settings-group input[type="range"] { height: 1.75rem; cursor: pointer; padding: 0 4px; vertical-align: middle; border: 1px solid #ccc; border-radius: 4px; background-color: #fff; -webkit-appearance: none; appearance: none; }
+        .settings-group input[type="range"]::-webkit-slider-runnable-track { height: 6px; background: #ddd; border-radius: 3px; }
+        .settings-group input[type="range"]::-moz-range-track { height: 6px; background: #ddd; border-radius: 3px; }
+        .settings-group input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; background: var(--accent-purple); border-radius: 50%; cursor: pointer; margin-top: -5px; }
+        .settings-group input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; background: var(--accent-purple); border-radius: 50%; cursor: pointer; border: none; }
+        .settings-group select { padding: 4px 8px; background-color: white; height: 2rem; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; vertical-align: middle; -webkit-appearance: none; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236B7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto; }
+        .settings-group .btn-small { padding: 4px 10px; font-size: 0.8rem; flex-shrink: 0; margin-left: auto; }
+        .settings-group span#settings-speed-display { font-weight: bold; color: #1f2937; min-width: 40px; text-align: center; background-color: #e5e7eb; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; margin: 0 0.25rem; flex-shrink: 0; line-height: 1.5rem; }
+        .settings-group.speed-control .control-container{ justify-content: flex-start; }
+        .settings-group.speed-control .btn-small { margin: 0; }
+        .settings-group hr { width: 100%; margin: 0.5rem 0; border-color: #e5e7eb; border-top-width: 1px; grid-column: 1 / -1; }
+        .modal-close-button { color: #9ca3af; position: absolute; top: 10px; right: 15px; font-size: 28px; font-weight: bold; cursor: pointer; transition: color 0.2s ease; line-height: 1; }
+        .modal-close-button:hover, .modal-close-button:focus { color: var(--text-dark); text-decoration: none; }
+
+        /* 場景背景 */
+        .scene-background {
+             background-size: cover; background-position: center;
+             min-height: 100vh; transition: background-image 1s ease-in-out;
+             position: relative; display: flex; flex-direction: column; width: 100%;
+        }
+        .scene-background::before { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.25); z-index: 1; }
+        .scene-content { position: relative; z-index: 2; flex-grow: 1; display: flex; flex-direction: column; //justify-content: center; }
+        /* 設定按鈕樣式 */
+        .settings-button-container { position: absolute; top: 1rem; right: 1rem; z-index: 60; }
+        .settings-button { background-color: rgba(255, 255, 255, 0.8); border: none; border-radius: 50%; padding: 0.6rem; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.15); transition: background-color 0.2s ease, transform 0.2s ease; display: flex; align-items: center; justify-content: center; }
+        .settings-button:hover { background-color: rgba(255, 255, 255, 0.95); transform: scale(1.1); }
+        .settings-icon { font-size: 1.3rem; color: #4b5563; line-height: 1; }
+
+        /* 動畫 */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* .fade-in class 仍然用於對話框/選項的進入 */
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        #story-display > .dialogue-box, #choices-display > .btn { opacity: 0; } /* 初始透明 */
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        /* 響應式設計調整 */
+        @media (max-width: 768px) {
+            body { font-size: 15px; }
+            .modal-content { width: 90%; padding: 20px; }
+            #notebook-modal .modal-content { margin: 15% auto; max-width: 90%;}
+            #settings-modal .modal-content { top: 3.5rem; right: 0.5rem; max-width: calc(100% - 1rem); width: auto; }
+            #character-options { max-width: 95%; gap: 1rem; padding-bottom: 1rem; }
+            .character-card { flex-direction: column; }
+            .character-image-container { width: 100%; height: 180px; }
+            .character-info-container { padding: 1rem; }
+            .character-description { font-size: 0.9rem; }
+            .dialogue-box { font-size: 1rem; padding-right: 2.5rem; }
+            .speak-button { font-size: 1.3rem; top: 0.5rem; right: 0.5rem; }
+            .btn { padding: 0.6rem 1.2rem; font-size: 0.95rem;}
+            .settings-button-container { top: 0.5rem; right: 0.5rem; }
+            .settings-button { padding: 0.5rem; }
+            .settings-icon { font-size: 1.1rem; }
+            .settings-group label { width: 40px; font-size: 0.8rem;}
+            .settings-group input[type="range"] { min-width: 80px; }
+            .settings-group select { min-width: 120px; font-size: 0.8rem;}
+            .settings-group .btn-small { font-size: 0.75rem;}
+            .settings-group span { font-size: 0.75rem; min-width: 35px;}
+        }
+        @media (max-width: 480px) {
+             body { font-size: 14px; }
+             .character-image-container { height: 150px; }
+             .character-info-container h3 { font-size: 1.2rem;}
+             .character-description { font-size: 0.85rem; }
+             .keyword-tag-box { font-size: 0.75rem; padding: 4px 10px;}
+             .btn-select-char { font-size: 0.9rem;}
+             .dialogue-box { font-size: 0.95rem; }
+             .btn { padding: 0.5rem 1rem; font-size: 0.9rem; }
+             #settings-modal .modal-content { max-width: calc(100% - 1rem); }
+             .settings-group label { width: 35px; }
+             .settings-group .control-container { gap: 0.25rem; }
+             .settings-group select { min-width: 100px; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="game-container" class="container mx-auto p-0 md:p-4 max-w-none md:max-w-4xl min-h-screen flex flex-col">
+
+        <div class="settings-button-container">
+            <button id="open-settings-button" class="settings-button" title="遊戲設定">
+                <span class="settings-icon">⚙️</span>
+            </button>
+        </div>
+
+        <div id="start-screen" class="flex flex-col items-center justify-center flex-grow scene-background" style="background-image: url('https://images.unsplash.com/photo-1562774053-701939374585?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dW5pdmVyc2l0eSUyMGNhbXB1c3xlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=1200&q=80');">
+            <div class="scene-content text-center p-4">
+                <div class="bg-black bg-opacity-70 p-8 md:p-10 rounded-lg shadow-xl text-white max-w-xl mx-auto">
+                    <h1 class="text-5xl font-bold mb-6 game-title-gradient">迷霧校園</h1>
+                    <p class="mb-3 text-lg leading-relaxed">深夜的<span class="keyword">校園</span>圖書館，傳來一聲尖叫，打破了往日的寧靜... <span title="Mystery">❓</span></p>
+                    <p class="mb-6 text-lg leading-relaxed">備受尊敬的物理系<span class="keyword">張教授</span>被發現陳屍於<span class="keyword">辦公室</span>內。現場疑點重重，你是否能從蛛絲馬跡中找出隱藏的<span class="keyword">真兇</span>？<span title="Detective">🕵️</span></p>
+                    <div class="text-gray-300 mb-8 space-y-2">
+                        <p class="start-info-text">建議遊玩人數：<span>1</span> 人</p>
+                        <p class="start-info-text">預計總時長：約 <span>20-30</span> 分鐘</p>
+                        <p class="start-info-text">難度：<span>★☆☆☆☆</span> (新手友好)</p>
+                    </div>
+                    <button id="start-game-button" class="btn text-lg">開始遊戲</button>
+                    <button id="load-game-button" class="btn btn-secondary text-lg mt-2 md:mt-0 md:ml-4 hidden">讀取存檔</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="character-select-screen" class="hidden flex flex-col items-center justify-center flex-grow scene-background" style="background-image: url('https://images.unsplash.com/photo-1507842217343-583bb7270b66?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bGlicmFyeXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=1200&q=80');">
+             <div class="scene-content w-full flex flex-col items-center p-4">
+                 <h2 class="text-3xl font-bold mb-8 text-center text-gray-100 chapter-title-style">選擇你的角色</h2>
+                 <div id="character-options" class="flex flex-col gap-6 w-full max-w-lg"></div>
+                 <p class="text-center mt-8 text-gray-400">選擇不同的角色將體驗不同的故事線索和視角。</p>
+            </div>
+        </div>
+
+        <div id="game-screen" class="hidden flex flex-col flex-grow scene-background" style="/* 背景由 JS 設定 */">
+            <div class="scene-content flex-grow flex flex-col p-4 md:p-6">
+                <div class="bg-black bg-opacity-70 p-4 md:p-6 rounded-lg shadow-lg flex-grow flex flex-col max-w-4xl mx-auto w-full">
+                    <h2 id="chapter-title" class="text-2xl font-bold mb-4 text-white text-center chapter-title-style"></h2>
+                    <div id="character-status" class="mb-4 p-3 bg-white bg-opacity-80 rounded-lg flex items-center shadow">
+                        <img id="player-avatar-game" src="" alt="玩家頭像" class="w-12 h-12 rounded-full mr-4 border-2 border-blue-400 shadow-md">
+                        <div class="flex-grow">
+                            <p id="player-name-game" class="font-bold text-gray-800"></p>
+                            <p id="current-objective" class="text-sm text-gray-600"></p>
+                        </div>
+                         <button id="notebook-button" class="btn btn-secondary ml-4">查看筆記 <span title="Notebook">📝</span></button>
+                         <button id="save-game-button" class="btn btn-secondary ml-2">儲存遊戲 <span title="Save">💾</span></button>
+                    </div>
+                    <div id="story-display" class="flex-grow overflow-y-auto mb-4 p-4 bg-white bg-opacity-90 rounded-lg shadow-inner min-h-[300px] max-h-[55vh]"></div>
+                    <div id="choices-display" class="mt-auto text-center"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="ending-screen" class="hidden flex flex-col items-center justify-center flex-grow scene-background" style="background-image: url('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YWJzdHJhY3QlMjBkYXJrJTIwYmFja2dyb3VuZHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=1200&q=80');">
+            <div class="scene-content text-center p-4">
+                <div class="bg-white bg-opacity-90 p-8 md:p-10 rounded-lg shadow-xl max-w-lg mx-auto">
+                    <h2 id="ending-title" class="text-4xl font-bold mb-6 text-gray-800"></h2>
+                    <p id="ending-description" class="mb-8 text-gray-600 leading-relaxed"></p>
+                    <button id="restart-button" class="btn text-lg">重新開始 <span title="Restart">🔄</span></button>
+                </div>
+            </div>
+        </div>
+
+        <div id="notebook-modal" class="modal">
+            <div class="modal-content">
+                <span class="modal-close-button" onclick="closeNotebook()">&times;</span>
+                <h3 class="text-xl font-bold mb-4 text-gray-800">我的筆記 <span title="Notebook">📝</span></h3>
+                <ul id="clue-list" class="list-disc list-inside text-gray-700 space-y-2">
+                    <li>遊戲尚未開始或沒有線索。</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="settings-modal" class="modal">
+            <div class="modal-content">
+                <span class="modal-close-button" onclick="closeSettings()">&times;</span>
+                <h3 class="text-xl font-bold mb-6 text-gray-800 text-center">遊戲設定 ⚙️</h3>
+                <div class="settings-controls-grid">
+                    <div class="settings-group">
+                         <label for="settings-volume-slider">音量:</label>
+                         <div class="control-container">
+                             <input type="range" id="settings-volume-slider" min="0" max="1" step="0.1" value="0.5">
+                             <button id="settings-mute-button" class="btn btn-secondary btn-small">靜音</button>
+                         </div>
+                     </div>
+                     <div class="settings-group speed-control">
+                         <label for="settings-speed-display">速度:</label>
+                         <div class="control-container">
+                             <button id="settings-speed-down-button" class="btn btn-secondary btn-small">-</button>
+                             <span id="settings-speed-display">x1.0</span>
+                             <button id="settings-speed-up-button" class="btn btn-secondary btn-small">+</button>
+                         </div>
+                     </div>
+                     <hr class="my-2 border-gray-300 col-span-full">
+                     <div class="settings-group">
+                         <label for="settings-tts-voice">語音:</label>
+                         <div class="control-container">
+                             <select id="settings-tts-voice" name="tts-voice"></select>
+                         </div>
+                     </div>
+                     <div class="settings-group">
+                         <label for="settings-tts-rate">語速:</label>
+                         <div class="control-container">
+                             <input type="range" id="settings-tts-rate" min="0.5" max="2" step="0.1" value="1">
+                         </div>
+                     </div>
+                     <div class="settings-group">
+                         <label for="settings-tts-pitch">音高:</label>
+                         <div class="control-container">
+                             <input type="range" id="settings-tts-pitch" min="0" max="2" step="0.1" value="1">
+                         </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DOM 元素獲取 ---
+        const gameContainer = document.getElementById('game-container');
+        const startScreen = document.getElementById('start-screen');
+        const characterSelectScreen = document.getElementById('character-select-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const endingScreen = document.getElementById('ending-screen');
+        const startGameButton = document.getElementById('start-game-button');
+        const characterOptionsContainer = document.getElementById('character-options');
+        const chapterTitle = document.getElementById('chapter-title');
+        const storyDisplay = document.getElementById('story-display');
+        const choicesDisplay = document.getElementById('choices-display');
+        const endingTitle = document.getElementById('ending-title');
+        const endingDescription = document.getElementById('ending-description');
+        const restartButton = document.getElementById('restart-button');
+        const playerAvatarGame = document.getElementById('player-avatar-game');
+        const playerNameGame = document.getElementById('player-name-game');
+        const currentObjective = document.getElementById('current-objective');
+        const notebookButton = document.getElementById('notebook-button');
+        const notebookModal = document.getElementById('notebook-modal');
+        const clueList = document.getElementById('clue-list');
+        const openSettingsButton = document.getElementById('open-settings-button');
+        const settingsModal = document.getElementById('settings-modal');
+        const settingsVolumeSlider = document.getElementById('settings-volume-slider');
+        const settingsMuteButton = document.getElementById('settings-mute-button');
+        const settingsSpeedDownButton = document.getElementById('settings-speed-down-button');
+        const settingsSpeedDisplay = document.getElementById('settings-speed-display');
+        const settingsSpeedUpButton = document.getElementById('settings-speed-up-button');
+        const settingsTtsVoiceSelect = document.getElementById('settings-tts-voice');
+        const settingsTtsRateSlider = document.getElementById('settings-tts-rate');
+        const settingsTtsPitchSlider = document.getElementById('settings-tts-pitch');
+        const loadGameButton = document.getElementById('load-game-button');
+        const saveGameButton = document.getElementById('save-game-button');
+
+        // --- 遊戲狀態變數 ---
+        let currentChapter = 0;
+        let currentStoryNodeId = null;
+        let chosenCharacter = null;
+        let selectedCharacterIdTemp = null;
+        let collectedClues = [];
+        let gameState = {};
+        let isMuted = false;
+        let currentVolume = 0.5;
+        let typewriterTimeout = null;
+        let isAudioInitialized = false;
+        let audioContextRequiresInteraction = true;
+        const BASE_TYPEWRITER_SPEED = 30;
+        let typewriterSpeed = BASE_TYPEWRITER_SPEED;
+        const MAX_SPEED = 5;
+        const MIN_SPEED = 80;
+        const SPEED_STEP = 5;
+        let availableVoices = [];
+        let selectedVoice = null;
+        let currentTtsRate = 1;
+        let currentTtsPitch = 1;
+        let currentUtterance = null;
+        let lastSpokenText = "";
+        let lastSpeakButton = null;
+        let isSpeechPaused = false;
+        let populateVoiceListAttempts = 0;
+        let currentTimeOfDay = 'day'; // 'day' or 'night'
+        const SAVE_GAME_KEY = 'mistyCampusSaveData';
+
+        // --- 音效合成器 ---
+        let sfxPlayer = null;
+        let synth = null;
+
+        // --- 關鍵字列表 ---
+        const keywords = ["李教授", "王同學", "陳警衛", "張教授", "辦公室", "實驗室", "圖書館", "化學藥品", "便條", "鋼筆", "咖啡", "文件", "研究項目", "數據", "試劑", "毒物化學", "毒劑", "真兇", "校園", "物理系", "化學系", "指導生", "保全", "同事", "競爭對手", "指導生", "研究經費", "論文", "爭吵", "警衛", "巡邏", "現場", "打鬥痕跡", "藥品氣味", "碎片", "合作", "爭議", "瓶子", "刺鼻", "化驗", "停車場", "宿舍", "線索", "毒物", "翻閱", "懷疑", "動機", "栽贓", "致命", "權限", "造假", "威脅", "畢業資格", "對質", "偽證", "判斷", "指認", "真相", "成果", "嫌疑", "清白", "證據", "敲詐勒索", "懸案", "懲罰"];
+
+        // --- 遊戲資料 ---
+        const characters = {
+            profLi: {
+                id: 'profLi',
+                name: '李教授 (化學系)',
+                // *** 修改了這裡的 avatar 連結 ***
+                avatar: 'https://t242642911.github.io/kevinboy/%E6%9D%8E%E6%95%99%E6%8E%88.png',
+                description: '被害者<span class="keyword">張教授</span>的<span class="keyword">同事</span>，也是學術上的<span class="keyword">競爭對手</span>。個性沉穩，學術<span class="keyword">野心</span>勃勃，喜好品茗🍵。表面和善，但據說與<span class="keyword">張教授</span>在<span class="keyword">研究經費</span>上有過激烈<span class="keyword">爭執</span>。他是否為了<span class="keyword">研究成果</span>而不擇手段？',
+                tags: ["沉穩", "野心家", "化學專家", "品茗愛好者"],
+                startNode: 'chapter1_start_li'
+            },
+            studentWang: {
+                id: 'studentWang',
+                name: '王同學 (物理系)',
+                // *** 修改了這裡的 avatar 連結 ***
+                avatar: 'https://t242642911.github.io/kevinboy/%E7%8E%8B%E5%90%8C%E5%AD%B8.png',
+                description: '<span class="keyword">張教授</span>最看重的<span class="keyword">指導生</span>之一。個性衝動熱情，熱愛籃球🏀。近期因<span class="keyword">論文</span><span class="keyword">數據</span>問題與教授關係緊張。有人看到他案發前晚與<span class="keyword">張教授</span>大聲<span class="keyword">爭吵</span>。他是否因<span class="keyword">畢業資格</span>受到<span class="keyword">威脅</span>而痛下殺手？',
+                tags: ["衝動", "熱情", "物理系學生", "籃球愛好者"],
+                startNode: 'chapter1_start_wang'
+            },
+            guardChen: {
+                id: 'guardChen',
+                name: '陳警衛 (校園保全)',
+                // *** 修改了這裡的 avatar 連結 ***
+                avatar: 'https://t242642911.github.io/kevinboy/%E8%AD%A6%E8%A1%9B.png',
+                description: '第一個發現案<span class="keyword">現場</span>的<span class="keyword">警衛</span>。在<span class="keyword">校園</span>工作多年，個性寡言，喜歡下棋♟️。看似平凡，卻對<span class="keyword">校園</span>的每個角落瞭若指掌，觀察力敏銳。他是否在<span class="keyword">巡邏</span>時看到了什麼關鍵<span class="keyword">線索</span>，或者隱藏著不為人知的秘密？',
+                tags: ["寡言", "觀察力敏銳", "老員工", "下棋愛好者"],
+                startNode: 'chapter1_start_chen'
+            }
+        };
+        const sceneBackgrounds = {
+            start: 'https://images.unsplash.com/photo-1562774053-701939374585?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dW5pdmVyc2l0eSUyMGNhbXB1c3xlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=1200&q=80',
+            characterSelect: 'https://images.unsplash.com/photo-1507842217343-583bb7270b66?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bGlicmFyeXxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=1200&q=80',
+            office: 'https://images.unsplash.com/photo-1485125611436-c6fea81a3599?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fG1lc3N5JTIwZGVza3xlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=1200&q=80',
+            lab: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y2hlbWlzdHJ5JTIwbGFifGVufDB8fDB8fHww&auto=format&fit=crop&w=1200&q=80',
+            library: 'https://images.unsplash.com/photo-1521587760476-6c12a4b040da?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8bGlicmFyeSUyMGJvb2tzaGVsdmVzfGVufDB8fDB8fHww&auto=format&fit=crop&w=1200&q=80',
+            ending: 'https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YWJzdHJhY3QlMjBkYXJrJTIwYmFja2dyb3VuZHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=1200&q=80'
+        };
+        const story = {
+             chapter1_intro: { type: 'narration', text: (name) => `第一章：不平靜的清晨 🌅\n\n你 (${name}) 和往常一樣來到學校，卻被一陣騷動吸引。據說，德高望重的<span class="keyword">物理系</span>教授，<span class="keyword">張教授</span>，被發現死在了他的<span class="keyword">辦公室</span>裡... <span title="Shocked">😱</span>`, next: (id) => characters[id].startNode, background: sceneBackgrounds.office, objective: "調查張教授的死因" },
+            chapter1_start_li: { type: 'dialogue', character: '李教授', text: "（內心）<span class=\"keyword\">張教授</span>死了？這真是...太突然了。雖然我們是<span class=\"keyword\">競爭對手</span>，但他畢竟是個值得尊敬的學者。我得去看看情況。🤔", next: 'chapter1_office_observe' },
+            chapter1_start_wang: { type: 'dialogue', character: '王同學', text: "（內心）老師...死了？怎麼會這樣！昨天我還因為<span class=\"keyword\">論文</span>的事跟他<span class=\"keyword\">爭吵</span>...警察不會<span class=\"keyword\">懷疑</span>我吧？不行，我要冷靜。😰", next: 'chapter1_office_observe' },
+            chapter1_start_chen: { type: 'dialogue', character: '陳警衛', text: "唉，真倒楣，<span class=\"keyword\">巡邏</span>的時候就發現<span class=\"keyword\">張教授</span><span class=\"keyword\">辦公室</span>門沒鎖，進去一看...人就倒在那了。報警後，現在這裡被封鎖了。👮‍♂️", next: 'chapter1_office_observe' },
+            chapter1_office_observe: { type: 'narration', text: "你來到<span class=\"keyword\">張教授</span>的<span class=\"keyword\">辦公室</span>門口，警方正在<span class=\"keyword\">現場</span>勘查。辦公室內一片狼藉，似乎有<span class=\"keyword\">打鬥痕跡</span>。空氣中瀰漫著一股奇怪的<span class=\"keyword\">化學藥品</span>氣味。👃", choices: [ { text: "仔細觀察<span class=\"keyword\">辦公室</span>內部 <span title='Eyes'>👀</span>", next: 'chapter1_office_detail', sfx: 'click' }, { text: "詢問旁邊的<span class=\"keyword\">陳警衛</span>（如果不是陳警衛）", next: 'chapter1_ask_guard', condition: (id) => id !== 'guardChen', sfx: 'click' }, { text: "找機會問問其他在場的人（<span class=\"keyword\">李教授</span>/<span class=\"keyword\">王同學</span>）", next: 'chapter1_ask_others', condition: (id) => id === 'guardChen', sfx: 'click' }, { text: "先離開<span class=\"keyword\">現場</span>，去別處找<span class=\"keyword\">線索</span> <span title='Walk'>🚶</span>", next: 'chapter1_leave_office', sfx: 'click' } ] },
+            chapter1_office_detail: { type: 'narration', text: "你注意到地上有一張撕碎的<span class=\"keyword\">便條</span>📄，還有一支摔壞的<span class=\"keyword\">鋼筆</span>✒️。桌上放著一杯冷掉的<span class=\"keyword\">咖啡</span>☕️，杯口內緣似乎有些<span class=\"keyword\">不尋常的殘留物</span>。旁邊散落著一些<span class=\"keyword\">文件</span>📑。", action: () => { addClue("辦公室有打鬥痕跡，空氣中有化學藥品味。"); addClue("咖啡杯內緣有不尋常殘留物。"); }, choices: [ { text: "嘗試拼湊<span class=\"keyword\">便條</span> <span title='Puzzle'>🧩</span>", next: 'chapter1_note_puzzle', sfx: 'puzzle' }, { text: "檢查散落的<span class=\"keyword\">文件</span>", next: 'chapter1_check_files', sfx: 'click' }, { text: "先不管殘留物，繼續觀察其他地方", next: 'chapter1_after_observe', sfx: 'click'} ] },
+            chapter1_note_puzzle: { type: 'narration', text: "你小心翼翼地撿起<span class=\"keyword\">碎片</span>，似乎可以拼出『...實驗...<span class=\"keyword\">數據</span>...小心<span class=\"keyword\">李</span>...』的字樣。", action: () => { addClue("撕碎的便條提及『實驗數據』和『小心李』。"); updateGameState('foundNote', true); }, next: 'chapter1_after_observe' },
+            chapter1_check_files: { type: 'narration', text: "<span class=\"keyword\">文件</span>大多是關於一項新的物理<span class=\"keyword\">研究項目</span>，其中一份提到了與<span class=\"keyword\">化學系</span><span class=\"keyword\">合作</span>的可能性，但似乎有些<span class=\"keyword\">爭議</span>。", action: () => addClue("張教授的研究項目可能與化學系有合作爭議。"), next: 'chapter1_after_observe' },
+            chapter1_ask_guard: { type: 'dialogue', character: '陳警衛', text: "唉，我早上<span class=\"keyword\">巡邏</span>發現的。門沒鎖，進去就看到<span class=\"keyword\">張教授</span>倒在地上，旁邊還有個打翻的<span class=\"keyword\">化學品</span><span class=\"keyword\">瓶子</span>...味道很<span class=\"keyword\">刺鼻</span>。我馬上就報警了。", action: () => addClue("陳警衛說發現時門沒鎖，旁邊有打翻的化學品。"), choices: [ { text: "追問<span class=\"keyword\">化學品</span>是什麼", next: 'chapter1_ask_guard_chem', sfx: 'click' }, { text: "詢問是否有可疑人士出沒", next: 'chapter1_ask_guard_suspect', sfx: 'click' } ] },
+            chapter1_ask_guard_chem: { type: 'dialogue', character: '陳警衛', text: "我哪懂那些啊，聞起來有點像...清潔劑？但又不太一樣。警察已經拿去<span class=\"keyword\">化驗</span>了。", next: 'chapter1_after_observe' },
+            chapter1_ask_guard_suspect: { type: 'dialogue', character: '陳警衛', text: "昨晚下班後就沒看到什麼特別的人了...不過，好像看到<span class=\"keyword\">李教授</span>的車比較晚才離開<span class=\"keyword\">停車場</span>。🚗 還有...巡邏到這附近時，好像看到個人影匆匆離開<span class=\"keyword\">辦公室</span>方向...天色暗，沒看清是誰，但感覺有點像...唉，也許是我眼花。", action: () => { addClue("陳警衛看到李教授晚離開，且模糊看到人影離開辦公室附近。"); updateGameState('guardSawLiLate', true); updateGameState('guardSawFigure', true); }, next: 'chapter1_after_observe' },
+            chapter1_ask_others: { type: 'narration', text: "你看到<span class=\"keyword\">李教授</span>和<span class=\"keyword\">王同學</span>也在附近，臉色都不太好。", choices: [ { text: "詢問<span class=\"keyword\">李教授</span>", next: 'chapter1_ask_li_by_guard', sfx: 'click' }, { text: "詢問<span class=\"keyword\">王同學</span>", next: 'chapter1_ask_wang_by_guard', sfx: 'click' } ] },
+            chapter1_ask_li_by_guard: { type: 'dialogue', character: '李教授', text: "（警衛先生）真是太不幸了。我和<span class=\"keyword\">張教授</span>雖然有些學術上的分歧，但絕不至於...唉。我昨晚處理實驗到比較晚，離開時沒注意到什麼異常。", next: 'chapter1_after_observe' },
+            chapter1_ask_wang_by_guard: { type: 'dialogue', character: '王同學', text: "（警衛大哥）我...我不知道...我昨晚是和老師有些<span class=\"keyword\">爭執</span>，但我真的沒做什麼！我後來就氣沖沖回<span class=\"keyword\">宿舍</span>了！", action: () => updateGameState('wangAdmitsArgue', true), next: 'chapter1_after_observe' },
+            chapter1_leave_office: { type: 'narration', text: "你決定暫時離開<span class=\"keyword\">辦公室</span>，也許可以從其他地方找到<span class=\"keyword\">線索</span>。<span class=\"keyword\">校園</span>裡議論紛紛。", choices: [ { text: "前往化學<span class=\"keyword\">實驗室</span>看看 <span title='Lab'>🧪</span>", next: 'chapter1_goto_lab', background: sceneBackgrounds.lab, sfx: 'travel' }, { text: "去<span class=\"keyword\">圖書館</span>查資料 <span title='Library'>📚</span>", next: 'chapter1_goto_library', background: sceneBackgrounds.library, sfx: 'travel' } ] },
+            chapter1_after_observe: { type: 'narration', text: "<span class=\"keyword\">現場</span>能看到的<span class=\"keyword\">線索</span>似乎有限，你思考著下一步該怎麼做。🤔", choices: [ { text: "再次仔細觀察<span class=\"keyword\">辦公室</span> <span title='Eyes'>👀</span>", next: 'chapter1_office_detail', condition: () => !hasClue("咖啡杯內緣有不尋常殘留物。"), sfx: 'click' }, { text: "詢問其他人（如果還沒問）", next: 'chapter1_ask_guard', condition: (id) => id !== 'guardChen' && !hasClue("陳警衛看到李教授晚離開"), sfx: 'click' }, { text: "詢問其他人（如果還沒問）", next: 'chapter1_ask_others', condition: (id) => id === 'guardChen' && !gameState.wangAdmitsArgue && !gameState.guardSawLiLate, sfx: 'click' }, { text: "離開<span class=\"keyword\">辦公室</span>，去別處 <span title='Walk'>🚶</span>", next: 'chapter1_leave_office', sfx: 'click' } ] },
+            chapter1_goto_lab: { type: 'narration', text: "化學<span class=\"keyword\">實驗室</span>瀰漫著各種<span class=\"keyword\">藥品</span>的味道。你注意到一個標示著特殊符號的<span class=\"keyword\">試劑</span>櫃似乎不太對勁，好像少了一瓶？", action: () => addClue("化學實驗室的特殊試劑櫃可能少了一瓶試劑。"), next: 'chapter1_end_choice' },
+            chapter1_goto_library: { type: 'narration', text: "<span class=\"keyword\">圖書館</span>很安靜。你在物理學區的書架上發現一本關於『<span class=\"keyword\">毒物</span>化學』的書有被<span class=\"keyword\">翻閱</span>過的痕跡，書頁間似乎夾著一張模糊的<span class=\"keyword\">實驗室</span>借用單。", action: () => {addClue("圖書館裡一本『毒物化學』的書被翻閱過。"); addClue("毒物化學書中夾有模糊的實驗室借用單。"); updateGameState('foundBorrowSlip', true);}, next: 'chapter1_end_choice' },
+            chapter1_end_choice: { type: 'narration', text: "第一天的調查暫告一段落，你整理了一下思緒，覺得有些可疑之處。", choices: [ { text: "感覺<span class=\"keyword\">李教授</span>很<span class=\"keyword\">可疑</span>", next: 'end_chapter1', action: () => updateGameState('suspect', 'profLi'), sfx: 'decision' }, { text: "感覺<span class=\"keyword\">王同學</span>很<span class=\"keyword\">可疑</span>", next: 'end_chapter1', action: () => updateGameState('suspect', 'studentWang'), sfx: 'decision' }, { text: "感覺<span class=\"keyword\">陳警衛</span>的證詞有些奇怪", next: 'end_chapter1', action: () => updateGameState('suspect', 'guardChen'), sfx: 'decision' }, { text: "目前<span class=\"keyword\">線索</span>還不明朗", next: 'end_chapter1', action: () => updateGameState('suspect', 'unknown'), sfx: 'decision' } ] },
+            end_chapter1: {
+                type: 'narration',
+                text: "夜幕降臨 🌃，<span class=\"keyword\">校園</span>暫時恢復了平靜，但你知道，<span class=\"keyword\">真相</span>還遠未揭開...（第一章結束）",
+                action: () => {
+                    currentChapter = 2;
+                    currentTimeOfDay = 'night';
+                    console.log("時間推進到夜晚");
+                },
+                next: 'chapter2_intro',
+                background: sceneBackgrounds.start
+            },
+            chapter2_intro: {
+                type: 'narration',
+                text: (name) => `第二章：深入迷霧 🌫️\n\n<ins>夜色</ins>中，警方仍在調查，但進展緩慢。你 (${name}) 決定根據昨天的發現，在夜色中進行更深入的追查。`, // 修改文本
+                next: 'chapter2_start',
+                background: sceneBackgrounds.office,
+                objective: "找出關鍵證據，鎖定真兇"
+            },
+            // ... (第二章及之後的劇情節點保持不變) ...
+            chapter2_start: { type: 'narration', text: "你回想起昨天收集到的<span class=\"keyword\">線索</span>和<span class=\"keyword\">懷疑</span>對象。", choices: [                { text: "重新審視撕碎的<span class=\"keyword\">便條</span> ('小心李')", next: 'chapter2_revisit_note', condition: () => gameState.foundNote, sfx: 'click' },                { text: "調查<span class=\"keyword\">化學品</span>與<span class=\"keyword\">咖啡</span>殘留物", next: 'chapter2_investigate_chem_coffee', condition: () => hasClue("化學實驗室的特殊試劑櫃可能少了一瓶試劑") || hasClue("咖啡杯內緣有不尋常殘留物"), sfx: 'click'},                { text: "追查<span class=\"keyword\">王同學</span>的<span class=\"keyword\">爭吵</span>原因", next: 'chapter2_investigate_wang', condition: () => gameState.wangAdmitsArgue || (chosenCharacter && chosenCharacter.id === 'studentWang'), sfx: 'click' },                { text: "調查<span class=\"keyword\">圖書館</span>的借用單", next: 'chapter2_investigate_slip', condition: () => gameState.foundBorrowSlip, sfx: 'click'},                { text: "再次與嫌疑人<span class=\"keyword\">對質</span> 🗣️", next: 'chapter2_confront', sfx: 'click' } ] },
+            chapter2_revisit_note: { type: 'narration', text: "『小心李...』這句話一直縈繞在你心頭。<span class=\"keyword\">李教授</span>確實有<span class=\"keyword\">動機</span>，但這是否太過明顯？也許是故意留下來<span class=\"keyword\">栽贓</span>他人的？", action: () => addClue("思考：便條可能是栽贓。"), next: 'chapter2_confront' },
+            chapter2_investigate_chem_coffee: { type: 'narration', text: "你設法了解到，<span class=\"keyword\">咖啡</span>杯的殘留物與<span class=\"keyword\">實驗室</span>失蹤的<span class=\"keyword\">試劑</span>成分吻合，是一種罕見但<span class=\"keyword\">致命</span>的<span class=\"keyword\">毒劑</span> <span title='Skull'>☠️</span>。這種<span class=\"keyword\">試劑</span>由<span class=\"keyword\">化學系</span>的<span class=\"keyword\">李教授</span>負責管理。", action: () => { addClue("確認咖啡殘留物與實驗室失蹤毒劑吻合。"); addClue("該毒劑由李教授管理。"); updateGameState('chemLinkedToLi', true); updateGameState('poisonInCoffee', true); }, next: 'chapter2_confront' },
+            chapter2_investigate_wang: { type: 'narration', text: "你打聽到，<span class=\"keyword\">王同學</span>與<span class=\"keyword\">張教授</span>的<span class=\"keyword\">爭吵</span>是因為<span class=\"keyword\">研究</span><span class=\"keyword\">數據</span>被質疑<span class=\"keyword\">造假</span>，<span class=\"keyword\">張教授</span>威脅要取消他的<span class=\"keyword\">畢業資格</span>。這對他來說無疑是巨大的打擊。", action: () => { addClue("王同學因數據造假被威脅取消畢業資格，有強烈殺人動機。"); updateGameState('wangMotiveConfirmed', true); }, next: 'chapter2_confront' },
+            chapter2_investigate_slip: { type: 'narration', text: "費了些功夫，你弄清楚了那張模糊的借用單...上面的名字似乎是... <span class=\"keyword\">王同學</span>？借用日期就在案發前一天。但他借用的似乎是常規<span class=\"keyword\">實驗室</span>，而非存放特殊<span class=\"keyword\">試劑</span>的地方。", action: () => { addClue("圖書館借用單顯示王同學案發前借用過常規實驗室。"); updateGameState('wangBorrowedLab', true); }, next: 'chapter2_confront'},
+            chapter2_confront: { type: 'narration', text: "你決定直接找你<span class=\"keyword\">懷疑</span>的人談談。", choices: [ { text: () => `與<span class="keyword">李教授</span><span class=\"keyword\">對質</span>`, next: 'chapter2_confront_li', condition: () => gameState.suspect === 'profLi' || (chosenCharacter && chosenCharacter.id !== 'profLi'), sfx: 'confront' }, { text: () => `與<span class="keyword">王同學</span><span class=\"keyword\">對質</span>`, next: 'chapter2_confront_wang', condition: () => gameState.suspect === 'studentWang' || (chosenCharacter && chosenCharacter.id !== 'studentWang'), sfx: 'confront' }, { text: () => `與<span class="keyword">陳警衛</span><span class=\"keyword\">對質</span>`, next: 'chapter2_confront_guard', condition: () => gameState.suspect === 'guardChen' || (chosenCharacter && chosenCharacter.id !== 'guardChen'), sfx: 'confront' }, { text: "再思考一下 🤔", next: 'chapter2_final_decision', sfx: 'click'} ] },
+            chapter2_confront_li: { type: 'dialogue', character: '李教授', text: "你<span class=\"keyword\">懷疑</span>我？<span class=\"keyword\">便條</span>？那一定是<span class=\"keyword\">栽贓</span>！<span class=\"keyword\">化學品</span>？<span class=\"keyword\">實驗室</span>管理混亂，誰都有可能拿到！至於<span class=\"keyword\">咖啡</span>？<span class=\"keyword\">張教授</span>自己泡的吧，我怎麼會知道裡面有什麼！別胡亂猜測！", next: 'chapter2_final_decision' },
+            chapter2_confront_wang: { type: 'dialogue', character: '王同學', text: "是，我恨老師<span class=\"keyword\">威脅</span>我！但我當時氣沖沖地走了 <span title='Angry'>😠</span>，我怎麼可能...我沒有殺人！真的！借用<span class=\"keyword\">實驗室</span>？那是為了補做之前的實驗！跟這事沒關係！", action: () => updateGameState('wangDenies', true), next: 'chapter2_final_decision' },
+            chapter2_confront_guard: { type: 'dialogue', character: '陳警衛', text: "我？我只是個<span class=\"keyword\">警衛</span>啊。我只是第一個發現的...看到人影？唉，可能是我老眼昏花看錯了，<span class=\"keyword\">現場</span>那麼亂，我也很緊張。我可不想惹麻煩。", action: () => { addClue("陳警衛對目擊人影的說法含糊其辭，似乎想撇清關係。"); updateGameState('guardEvasive', true); }, next: 'chapter2_final_decision' },
+            chapter2_final_decision: { type: 'narration', text: "所有的<span class=\"keyword\">線索</span>似乎都指向了某個人，但也存在矛盾。現在，是你做出最終<span class=\"keyword\">判斷</span>的時候了。", choices: [ { text: "<span class=\"keyword\">指認</span><span class=\"keyword\">真兇</span>是 <span class=\"keyword\">李教授</span>", next: 'ending_accuse_li', sfx: 'decision_final' }, { text: "<span class=\"keyword\">指認</span><span class=\"keyword\">真兇</span>是 <span class=\"keyword\">王同學</span>", next: 'ending_accuse_wang', sfx: 'decision_final' }, { text: "<span class=\"keyword\">指認</span><span class=\"keyword\">真兇</span>是 <span class=\"keyword\">陳警衛</span>", next: 'ending_accuse_guard', sfx: 'decision_final' }, { text: "<span class=\"keyword\">線索</span>不足，無法確定", next: 'ending_unsolved', sfx: 'decision_final' } ] },
+            ending_accuse_li: { type: 'ending', title: "真相大白 <span title='Trophy'>🏆</span>", description: "你成功<span class=\"keyword\">指認</span>了<span class=\"keyword\">李教授</span>。警方深入調查後發現，<span class=\"keyword\">李教授</span>為了竊取<span class=\"keyword\">張教授</span>的<span class=\"keyword\">研究</span><span class=\"keyword\">成果</span>並掃除<span class=\"keyword\">競爭對手</span>，利用管理<span class=\"keyword\">試劑</span>的<span class=\"keyword\">權限</span>獲取<span class=\"keyword\">毒劑</span>，很可能預先將其下在<span class=\"keyword\">張教授</span>常喝的<span class=\"keyword\">咖啡</span>中。撕碎的<span class=\"keyword\">便條</span>是他故意留下，試圖將<span class=\"keyword\">嫌疑</span>引向自己再辯解，混淆視聽。", outcome: 'success', background: sceneBackgrounds.ending },
+            ending_accuse_wang: { type: 'ending', title: "錯失真兇 <span title='Sad'>😥</span>", description: "你<span class=\"keyword\">指認</span>了<span class=\"keyword\">王同學</span>。雖然他確實有強烈<span class=\"keyword\">動機</span>且與教授<span class=\"keyword\">爭吵</span>，甚至案發前借用了<span class=\"keyword\">實驗室</span>，但警方最終確認<span class=\"keyword\">咖啡</span>中的<span class=\"keyword\">毒劑</span>來源指向<span class=\"keyword\">李教授</span>。<span class=\"keyword\">真兇</span><span class=\"keyword\">李教授</span>卻因為你的誤判而逍遙法外。", outcome: 'fail_wang', background: sceneBackgrounds.ending },
+            ending_accuse_guard: { type: 'ending', title: "判斷失誤 <span title='Facepalm'>🤦</span>", description: "你<span class=\"keyword\">指認</span>了<span class=\"keyword\">陳警衛</span>。雖然他的證詞前後有些模糊，但他並沒有接觸<span class=\"keyword\">毒劑</span>的機會和殺人的<span class=\"keyword\">動機</span>。警方排除了他的<span class=\"keyword\">嫌疑</span>，<span class=\"keyword\">真兇</span><span class=\"keyword\">李教授</span>得以逃脫。", outcome: 'fail_guard', background: sceneBackgrounds.ending },
+            ending_unsolved: { type: 'ending', title: "懸案未決 <span title='Question'>❓</span>", description: "由於關鍵<span class=\"keyword\">線索</span>不足或被誤導，你未能找出<span class=\"keyword\">真兇</span>。<span class=\"keyword\">張教授</span>的死成了一樁<span class=\"keyword\">懸案</span>，<span class=\"keyword\">真兇</span>隱藏在迷霧之中，未能得到應有的<span class=\"keyword\">懲罰</span>。", outcome: 'unsolved', background: sceneBackgrounds.ending }
+        };
+
+        // --- 函數 ---
+
+        // 根據時間更新視覺效果的函數
+        function updateVisualsBasedOnTime() {
+            const gameScreenElement = document.getElementById('game-screen');
+            if (!gameScreenElement) return;
+
+            const existingOverlay = gameScreenElement.querySelector('.time-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+
+            if (currentTimeOfDay === 'night') {
+                const overlay = document.createElement('div');
+                overlay.className = 'time-overlay';
+                overlay.style.cssText = `
+                    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                    background-color: rgba(0, 0, 15, 0.35); /* 稍微偏藍的暗色 */
+                    z-index: 1; pointer-events: none;
+                    transition: background-color 0.8s ease-in-out;
+                `;
+                gameScreenElement.appendChild(overlay);
+                 console.log("應用夜晚遮罩");
+            } else {
+                 console.log("目前是白天，移除遮罩");
+            }
+        }
+
+
+        function showScreen(screenId) {
+            startScreen.classList.add('hidden');
+            characterSelectScreen.classList.add('hidden');
+            gameScreen.classList.add('hidden');
+            endingScreen.classList.add('hidden');
+
+            const screenToShow = document.getElementById(screenId);
+            if (screenToShow) {
+                screenToShow.classList.remove('hidden');
+
+                let bgKey = screenId.replace('-screen', '');
+                let backgroundUrl = sceneBackgrounds[bgKey];
+
+                if (screenId === 'game-screen' && currentStoryNodeId && story[currentStoryNodeId] && story[currentStoryNodeId].background) {
+                    backgroundUrl = story[currentStoryNodeId].background;
+                }
+
+                if (backgroundUrl) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.style.cssText = `background-image: url('${backgroundUrl}'); background-size: cover; background-position: center; position: fixed; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.5s ease-in-out; z-index: -1;`;
+                    document.body.appendChild(tempDiv);
+                    const img = new Image();
+                    img.onload = () => {
+                        screenToShow.style.backgroundImage = `url('${backgroundUrl}')`;
+                        screenToShow.style.backgroundSize = 'cover';
+                        screenToShow.style.backgroundPosition = 'center';
+                        const oldTemp = document.querySelector('.temp-bg');
+                        if(oldTemp) oldTemp.remove();
+                        setTimeout(() => tempDiv.style.opacity = '1', 50);
+                        tempDiv.classList.add('temp-bg');
+                        setTimeout(() => { if (tempDiv.parentElement) tempDiv.remove(); }, 600);
+                    };
+                    img.onerror = () => {
+                        console.error(`無法載入背景圖片: ${backgroundUrl}`);
+                        if (tempDiv.parentElement) tempDiv.remove();
+                    }
+                    img.src = backgroundUrl;
+                }
+
+                 if (screenId === 'game-screen') {
+                     updateVisualsBasedOnTime();
+                 } else {
+                      const gameScreenElement = document.getElementById('game-screen');
+                      const existingOverlay = gameScreenElement?.querySelector('.time-overlay');
+                      if (existingOverlay) existingOverlay.remove();
+                 }
+
+            } else {
+                console.error("畫面未找到:", screenId);
+            }
+            syncAudioControls();
+            updateSpeedDisplay();
+        }
+
+        function populateCharacterSelection() {
+            characterOptionsContainer.innerHTML = '';
+            selectedCharacterIdTemp = null;
+            currentTimeOfDay = 'day'; // 重置時間
+            for (const charId in characters) {
+                const char = characters[charId];
+                const card = document.createElement('div');
+                card.className = 'character-card';
+                card.dataset.charId = charId;
+                let tagsHTML = '';
+                if (char.tags && char.tags.length > 0) {
+                    tagsHTML = char.tags.map(tag => `<span class="keyword-tag-box">${highlightKeywords(tag, false)}</span>`).join('');
+                }
+                card.innerHTML = `
+                    <div class="character-image-container">
+                        <img src="${char.avatar}" alt="${char.name} 頭像" onerror="this.onerror=null; this.src='https://placehold.co/160x200/cccccc/ffffff?text=Image+Not+Found';">
+                    </div>
+                    <div class="character-info-container">
+                        <h3>${highlightKeywords(char.name)}</h3>
+                        <p class="character-description">${highlightKeywords(char.description)}</p>
+                        <div class="character-tags">${tagsHTML}</div>
+                        <button class="btn btn-select-char">選擇此角色</button>
+                    </div>`;
+                const selectButton = card.querySelector('.btn-select-char');
+                if(selectButton) {
+                    selectButton.onclick = (event) => {
+                        event.stopPropagation();
+                        highlightCharacter(charId);
+                        selectCharacter(charId);
+                    };
+                }
+                 card.onclick = () => highlightCharacter(charId);
+                characterOptionsContainer.appendChild(card);
+            }
+        }
+
+        function highlightCharacter(charId) {
+            playSFX('click');
+            selectedCharacterIdTemp = charId;
+            const allCards = characterOptionsContainer.querySelectorAll('.character-card');
+            allCards.forEach(card => card.classList.remove('selected'));
+            const selectedCard = characterOptionsContainer.querySelector(`.character-card[data-char-id="${charId}"]`);
+            if (selectedCard) selectedCard.classList.add('selected');
+        }
+
+        function selectCharacter(charId) {
+            if (!charId) return;
+            playSFX('confirm');
+            chosenCharacter = characters[charId];
+            collectedClues = [];
+            gameState = {};
+            currentChapter = 1;
+            currentTimeOfDay = 'day'; // 從白天開始
+            updateNotebook();
+            playerAvatarGame.src = chosenCharacter.avatar;
+            playerAvatarGame.onerror = () => { playerAvatarGame.src = 'https://placehold.co/100x100/cccccc/ffffff?text=?'; };
+            playerNameGame.innerHTML = highlightKeywords(chosenCharacter.name);
+            loadStoryNode('chapter1_intro');
+        }
+
+        function loadStoryNode(nodeId) {
+             clearTimeout(typewriterTimeout);
+             if ('speechSynthesis' in window) {
+                 speechSynthesis.cancel();
+                 isSpeechPaused = false; lastSpokenText = ""; lastSpeakButton = null;
+             }
+             document.querySelectorAll('.speak-button.speaking, .speak-button.paused').forEach(btn => {
+                 btn.classList.remove('speaking', 'paused'); btn.innerHTML = '🔊';
+             });
+            const resolvedNodeId = typeof nodeId === 'function' ? nodeId(chosenCharacter.id) : nodeId;
+            const node = story[resolvedNodeId];
+            if (!node) { console.error("故事節點未找到:", resolvedNodeId); loadStoryNode('ending_unsolved'); return; }
+            currentStoryNodeId = resolvedNodeId;
+            showScreen('game-screen'); // 會更新視覺
+            if (resolvedNodeId.includes('intro')) {
+                const nodeText = getTextFromNode(node, false);
+                chapterTitle.innerHTML = highlightKeywords(nodeText.split('\n')[0]);
+                currentObjective.textContent = `目標: ${node.objective || '推進劇情'}`;
+            } else if (node.objective) { currentObjective.textContent = `目標: ${node.objective}`; }
+             chapterTitle.classList.add('chapter-title-style');
+            if (node.action) {
+                node.action(); // Action 可能改變 currentTimeOfDay
+                updateVisualsBasedOnTime(); // 確保 Action 執行後視覺同步
+            }
+            if (node.type === 'narration' || node.type === 'dialogue') {
+                displayMessage(node);
+            } else if (node.type === 'ending') { displayEnding(node); return; }
+            storyDisplay.scrollTop = storyDisplay.scrollHeight;
+        }
+
+        // ... (highlightKeywords, getTextFromNode 函數不變) ...
+        function highlightKeywords(text, isChoice = false) { if (!text) return ''; let highlightedText = text; const keywordClass = isChoice ? 'choice-keyword' : 'keyword'; const regex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'gi'); highlightedText = highlightedText.replace(regex, `<span class="${keywordClass}">$1</span>`); return highlightedText; }
+        function getTextFromNode(node, applyHighlight = true, isChoice = false) { let rawText = ''; if (typeof node.text === 'function') { rawText = node.text(chosenCharacter ? chosenCharacter.name : ''); } else { rawText = node.text || ''; } return applyHighlight ? highlightKeywords(rawText, isChoice) : rawText; }
+
+
+        function displayMessage(node) {
+            const messageHTML = getTextFromNode(node, true, false);
+            const messageElement = document.createElement('div');
+            messageElement.className = 'dialogue-box fade-in';
+            let characterName = "旁白";
+            const nameElement = document.createElement('div');
+            nameElement.className = 'character-name';
+            let rawTextForSpeech = getTextFromNode(node, false);
+            if (node.type === 'dialogue') {
+                characterName = node.character;
+                const highlightedCharName = highlightKeywords(characterName, false);
+                if (chosenCharacter && characterName === chosenCharacter.name) { messageElement.classList.add('player'); } else { messageElement.classList.add('npc'); }
+                nameElement.innerHTML = highlightedCharName + ":"; messageElement.appendChild(nameElement);
+                rawTextForSpeech = rawTextForSpeech.replace(/^（內心）/, '').replace(/^（.+?）/, '').trim();
+            } else { messageElement.classList.add('italic'); }
+            const plainText = rawTextForSpeech.replace(/<[^>]*>/g, '');
+            const emojiRegex = /[\u{1F300}-\u{1F5FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FA70}-\u{1FAFF}]/gu;
+            let textToSpeak = plainText.replace(emojiRegex, '').replace(/\s+/g, ' ').trim();
+            const textSpan = document.createElement('span'); messageElement.appendChild(textSpan);
+            if ('speechSynthesis' in window && textToSpeak) {
+                const speakButton = document.createElement('button'); speakButton.className = 'speak-button'; speakButton.innerHTML = '🔊'; speakButton.title = '播放聲音'; speakButton.dataset.textToSpeak = textToSpeak;
+                speakButton.onclick = (e) => {
+                    e.stopPropagation(); const text = e.currentTarget.dataset.textToSpeak; const synth = window.speechSynthesis;
+                    if (synth.speaking) {
+                        if (synth.paused && currentUtterance && currentUtterance.text === text) { console.log("繼續朗讀"); synth.resume(); e.currentTarget.classList.remove('paused'); e.currentTarget.classList.add('speaking'); e.currentTarget.innerHTML = '🔊'; isSpeechPaused = false; }
+                        else if (currentUtterance && currentUtterance.text === text) { console.log("暫停朗讀"); synth.pause(); e.currentTarget.classList.add('paused'); e.currentTarget.classList.remove('speaking'); e.currentTarget.innerHTML = '⏸️'; isSpeechPaused = true; }
+                        else { console.log("停止舊的，開始新的朗讀"); document.querySelectorAll('.speak-button.speaking, .speak-button.paused').forEach(btn => { if (btn !== e.currentTarget) { btn.classList.remove('speaking', 'paused'); btn.innerHTML = '🔊'; } }); speakText(text, e.currentTarget); e.currentTarget.classList.remove('paused'); e.currentTarget.classList.add('speaking'); e.currentTarget.innerHTML = '🔊'; isSpeechPaused = false; }
+                    } else { console.log("開始朗讀"); document.querySelectorAll('.speak-button.speaking, .speak-button.paused').forEach(btn => { if (btn !== e.currentTarget) { btn.classList.remove('speaking', 'paused'); btn.innerHTML = '🔊'; } }); speakText(text, e.currentTarget); e.currentTarget.classList.remove('paused'); e.currentTarget.classList.add('speaking'); e.currentTarget.innerHTML = '🔊'; isSpeechPaused = false; }
+                }; messageElement.appendChild(speakButton);
+            }
+            storyDisplay.appendChild(messageElement);
+            let charIndex = 0; let visibleHTML = '';
+            function typeWriterAdvanced() {
+                if (charIndex < messageHTML.length) {
+                    const char = messageHTML[charIndex]; let shouldDelay = true;
+                    if (char === '<') {
+                        const tagMatch = messageHTML.substring(charIndex).match(/^<[^>]+>/);
+                        if (tagMatch) { visibleHTML += tagMatch[0]; charIndex += tagMatch[0].length; shouldDelay = false; }
+                        else { visibleHTML += char; charIndex++; }
+                    } else { visibleHTML += char; charIndex++; }
+                    textSpan.innerHTML = visibleHTML;
+                    if (shouldDelay) { typewriterTimeout = setTimeout(typeWriterAdvanced, typewriterSpeed); }
+                    else { typeWriterAdvanced(); }
+                    storyDisplay.scrollTop = storyDisplay.scrollHeight;
+                } else { displayChoices(node); storyDisplay.scrollTop = storyDisplay.scrollHeight; }
+            }
+            choicesDisplay.innerHTML = ''; disableChoices(); typeWriterAdvanced();
+        }
+
+        function displayChoices(node) {
+            choicesDisplay.innerHTML = '';
+            if (node.choices && node.choices.length > 0) {
+                let hasVisibleChoice = false;
+                node.choices.forEach(choice => {
+                    let conditionMet = true; if (choice.condition) { conditionMet = choice.condition(chosenCharacter ? chosenCharacter.id : null, gameState); }
+                    if (conditionMet) {
+                        hasVisibleChoice = true; const button = document.createElement('button'); button.className = 'btn block w-full md:w-auto md:inline-block my-1 fade-in'; button.style.opacity = '0';
+                        const buttonText = typeof choice.text === 'function' ? choice.text() : choice.text; button.innerHTML = highlightKeywords(buttonText, true);
+                        button.onclick = () => {
+                            if ('speechSynthesis' in window) { speechSynthesis.cancel(); isSpeechPaused = false; } playSFX(choice.sfx || 'click');
+                            if (choice.action) { choice.action(); updateVisualsBasedOnTime(); } disableChoices(); loadStoryNode(choice.next);
+                        }; choicesDisplay.appendChild(button);
+                    }
+                });
+                 if (hasVisibleChoice) { setTimeout(() => { const buttons = choicesDisplay.querySelectorAll('.btn'); buttons.forEach(btn => btn.style.opacity = '1'); }, 50); }
+            } else if (node.next && node.type !== 'ending') {
+                const continueButton = document.createElement('button'); continueButton.className = 'btn block w-full md:w-auto md:inline-block my-1 fade-in'; continueButton.style.opacity = '0'; continueButton.textContent = "繼續...";
+                continueButton.onclick = () => { if ('speechSynthesis' in window) { speechSynthesis.cancel(); isSpeechPaused = false; } playSFX('click'); disableChoices(); loadStoryNode(node.next); }; choicesDisplay.appendChild(continueButton);
+                 setTimeout(() => continueButton.style.opacity = '1', 50);
+            }
+        }
+
+        function disableChoices() { const buttons = choicesDisplay.querySelectorAll('button'); buttons.forEach(button => { button.disabled = true; button.classList.add('btn-disabled'); }); }
+        function displayEnding(node) { playSFX('ending'); endingTitle.innerHTML = highlightKeywords(node.title, false); endingDescription.innerHTML = highlightKeywords(node.description, false); showScreen('ending-screen'); }
+        function addClue(clueText) { const plainClueText = clueText.replace(/<[^>]*>/g, ''); const plainCollectedClues = collectedClues.map(c => c.replace(/<[^>]*>/g, '')); if (!plainCollectedClues.includes(plainClueText)) { collectedClues.push(clueText); updateNotebook(); playSFX('discover'); } }
+        function hasClue(clueSubstring) { const plainClues = collectedClues.map(clue => clue.replace(/<[^>]*>/g, '')); return plainClues.some(clue => clue.includes(clueSubstring)); }
+        function updateGameState(key, value) { gameState[key] = value; }
+        function updateNotebook() { clueList.innerHTML = ''; if (collectedClues.length === 0) { clueList.innerHTML = '<li>目前沒有線索。</li>'; } else { collectedClues.forEach(clue => { const li = document.createElement('li'); li.innerHTML = highlightKeywords(clue, false); clueList.appendChild(li); }); } }
+
+        // **修改：Modal 開關使用 classList**
+        function openNotebook() { playSFX('ui'); notebookModal.classList.add('active'); }
+        function closeNotebook() { playSFX('ui_close'); notebookModal.classList.remove('active'); }
+        function openSettings() { playSFX('ui'); settingsModal.classList.add('active'); syncAudioControls(); }
+        function closeSettings() { playSFX('ui_close'); settingsModal.classList.remove('active'); }
+
+        // --- 音效處理 (不變) ---
+        async function initializeAudio() { console.log("[Audio] initializeAudio function entered."); if (isAudioInitialized && Tone.context && Tone.context.state === 'running') { console.log("[Audio] Already initialized and running."); return true; } if (typeof Tone === 'undefined') { console.error("[Audio] Tone.js object is undefined!"); isAudioInitialized = false; return false; } if (typeof speechSynthesis === 'undefined') { console.warn("[Audio] Speech Synthesis not supported by this browser."); } if (Tone.context && Tone.context.state !== 'running') { console.log("[Audio] AudioContext exists but not running, attempting to resume..."); try { await Tone.context.resume(); console.log("[Audio] AudioContext resumed successfully."); audioContextRequiresInteraction = false; isAudioInitialized = true; setVolume(currentVolume); if ('speechSynthesis' in window) speechSynthesis.cancel(); Tone.Destination.mute = isMuted; return true; } catch (resumeError) { console.error("[Audio] Failed to resume existing AudioContext:", resumeError); } } console.log("[Audio] Attempting Tone.start()..."); try { await Tone.start(); console.log("[Audio] Tone.start() successful. State:", Tone.context.state); audioContextRequiresInteraction = false; isAudioInitialized = true; console.log("[Audio] Context started, initialization flag set."); ensureAudioObjects(); setVolume(currentVolume); if ('speechSynthesis' in window) speechSynthesis.cancel(); Tone.Destination.mute = isMuted; return true; } catch (startError) { console.error("[Audio] Failed to start Tone.js AudioContext via Tone.start():", startError); console.warn("[Audio] Browser might restrict autoplay. Requires user interaction."); isAudioInitialized = false; audioContextRequiresInteraction = true; return false; } }
+        function ensureAudioObjects() { if (!synth && isAudioInitialized && Tone.context.state === 'running') { try { console.log("[Audio] Creating Synth on demand..."); synth = new Tone.Synth().toDestination(); console.log("[Audio] Synth created."); } catch (e) { console.error("[Audio] Error creating Synth:", e); return false; } } if (Tone.Transport && Tone.Transport.state !== 'started' && isAudioInitialized) { try { Tone.Transport.start(); console.log("[Audio] Tone.Transport started on demand."); } catch (e) { console.error("[Audio] Error starting Transport:", e); } } return !!synth; }
+        function playSFX(type) { if (isMuted || !isAudioInitialized) { return; } if (!ensureAudioObjects()) { console.error("Failed to ensure audio objects for SFX. Cannot play."); return; } if (!synth) { console.error("Cannot play SFX: Synth object is missing after ensureAudioObjects."); return; } try { if (!Tone.Destination.mute) { Tone.Destination.volume.value = Tone.gainToDb(currentVolume); } const now = Tone.now(); switch (type) { case 'click': synth.triggerAttackRelease("C4", "8n", now); break; case 'confirm': synth.triggerAttackRelease("E4", "8n", now); break; case 'discover': synth.triggerAttackRelease("G4", "4n", now); break; case 'puzzle': synth.triggerAttackRelease("A4", "8n", now + 0.1); synth.triggerAttackRelease("C5", "8n", now + 0.2); break; case 'travel': synth.triggerAttackRelease("F3", "4n", now); break; case 'confront': synth.triggerAttackRelease("A3", "4n", now); break; case 'decision': synth.triggerAttackRelease("D4", "4n", now); break; case 'decision_final': synth.triggerAttackRelease("G3", "2n", now); break; case 'ending': synth.triggerAttackRelease("C5", "1n", now); break; case 'ui': synth.triggerAttackRelease("C5", "16n", now); break; case 'ui_close': synth.triggerAttackRelease("A4", "16n", now); break; default: synth.triggerAttackRelease("C4", "8n", now); } } catch (e) { console.error("播放 SFX 時出錯:", type, e); } }
+
+        // --- 文字轉語音函數 (不變) ---
+        function speakText(textToSpeak, buttonElement = null) { if (!('speechSynthesis' in window)) { console.warn("此瀏覽器不支援語音合成。"); return; } if (!textToSpeak) { console.warn("沒有文字可以朗讀。"); return; } if (!isAudioInitialized || audioContextRequiresInteraction) { console.warn("音訊尚未完全初始化，無法朗讀。"); return; } if (isMuted) { console.log("目前為靜音狀態，不朗讀。"); return; } console.log("準備朗讀:", textToSpeak); speechSynthesis.cancel(); currentUtterance = new SpeechSynthesisUtterance(textToSpeak); currentUtterance.lang = selectedVoice ? selectedVoice.lang : 'zh-TW'; currentUtterance.voice = selectedVoice; currentUtterance.rate = currentTtsRate; currentUtterance.pitch = currentTtsPitch; lastSpokenText = textToSpeak; lastSpeakButton = buttonElement; isSpeechPaused = false; const handleEnd = () => { console.log("朗讀結束"); if (lastSpeakButton) { lastSpeakButton.classList.remove('speaking', 'paused'); lastSpeakButton.innerHTML = '🔊'; } currentUtterance = null; lastSpokenText = ""; lastSpeakButton = null; }; const handleError = (event) => { console.error("朗讀錯誤:", event.error); if (lastSpeakButton) { lastSpeakButton.classList.remove('speaking', 'paused'); lastSpeakButton.innerHTML = '🔊'; } currentUtterance = null; lastSpokenText = ""; lastSpeakButton = null; }; currentUtterance.onend = handleEnd; currentUtterance.onerror = handleError; speechSynthesis.speak(currentUtterance); }
+        function populateVoiceList(attempt = 1) { if (!('speechSynthesis' in window)) return; availableVoices = speechSynthesis.getVoices(); if (availableVoices.length === 0 && attempt <= 5) { console.log(`語音列表為空，第 ${attempt} 次嘗試重新獲取...`); setTimeout(() => populateVoiceList(attempt + 1), 100 * attempt); return; } console.log("Available voices:", availableVoices); populateVoiceListAttempts = 0; settingsTtsVoiceSelect.innerHTML = ''; const currentSelectedName = selectedVoice ? selectedVoice.name : null; let foundSelected = false; const chineseVoices = availableVoices.filter(voice => voice.lang.startsWith('zh')); if (chineseVoices.length > 0) { chineseVoices.forEach((voice, index) => { const option = document.createElement('option'); let displayName = voice.name.replace(/Microsoft |Google | \(Online\)| \(Local\)| Taiwan| Chinese \(Taiwan\)| Chinese \(Traditional, Taiwan\)| Chinese/g, '').trim(); if (!displayName) displayName = `語音 ${index + 1}`; option.textContent = `${displayName} (${voice.lang})`; option.setAttribute('data-lang', voice.lang); option.setAttribute('data-name', voice.name); if (currentSelectedName === voice.name) { option.selected = true; selectedVoice = voice; foundSelected = true; } else if (!currentSelectedName && !foundSelected && voice.lang === 'zh-TW') { option.selected = true; selectedVoice = voice; foundSelected = true; } settingsTtsVoiceSelect.appendChild(option); }); if (!settingsTtsVoiceSelect.querySelector('option[selected]') && settingsTtsVoiceSelect.options.length > 0) { settingsTtsVoiceSelect.selectedIndex = 0; const firstVoiceName = settingsTtsVoiceSelect.options[0].getAttribute('data-name'); selectedVoice = availableVoices.find(v => v.name === firstVoiceName); console.log("Defaulting to first available voice:", selectedVoice); } } else { const option = document.createElement('option'); option.textContent = '無可用中文語音'; option.disabled = true; settingsTtsVoiceSelect.appendChild(option); selectedVoice = null; } syncVoiceSelection(); }
+        function syncVoiceSelection() { if (!selectedVoice) { return; } let found = false; for (let i = 0; i < settingsTtsVoiceSelect.options.length; i++) { if (settingsTtsVoiceSelect.options[i].getAttribute('data-name') === selectedVoice.name) { settingsTtsVoiceSelect.selectedIndex = i; found = true; break; } } if (!found && settingsTtsVoiceSelect.options.length > 0 && !settingsTtsVoiceSelect.options[0].disabled) { settingsTtsVoiceSelect.selectedIndex = 0; const firstVoiceName = settingsTtsVoiceSelect.options[0].getAttribute('data-name'); selectedVoice = availableVoices.find(v => v.name === firstVoiceName); console.warn("Previously selected voice not found, defaulting to first available voice."); } else if (!found && settingsTtsVoiceSelect.options.length === 0) { selectedVoice = null; } }
+        function syncRateSelection() { settingsTtsRateSlider.value = currentTtsRate; } function syncPitchSelection() { settingsTtsPitchSlider.value = currentTtsPitch; }
+
+        // --- 其他控制函數 (不變) ---
+        function toggleMute() { isMuted = !isMuted; if (isAudioInitialized && Tone.Destination) { Tone.Destination.mute = isMuted; } updateMuteButtons(); if (isMuted && 'speechSynthesis' in window) { speechSynthesis.cancel(); isSpeechPaused = false; document.querySelectorAll('.speak-button.speaking, .speak-button.paused').forEach(btn => { btn.classList.remove('speaking', 'paused'); btn.innerHTML = '🔊'; }); } }
+        function updateMuteButtons() { settingsMuteButton.textContent = isMuted ? "取消靜音" : "靜音"; }
+        function setVolume(value) { const newVolume = parseFloat(value); currentVolume = newVolume; if (isAudioInitialized && Tone.Destination) { if (!isMuted) { Tone.Destination.volume.value = (newVolume === 0) ? -Infinity : Tone.gainToDb(newVolume); } } settingsVolumeSlider.value = newVolume; }
+        function syncAudioControls() { settingsVolumeSlider.value = currentVolume; updateMuteButtons(); if (isAudioInitialized && Tone.Destination) { Tone.Destination.mute = isMuted; if (!isMuted) { setVolume(currentVolume); } } syncVoiceSelection(); syncRateSelection(); syncPitchSelection(); }
+        function updateSpeedDisplay() { const speedMultiplier = (BASE_TYPEWRITER_SPEED / typewriterSpeed).toFixed(1); settingsSpeedDisplay.textContent = `x${speedMultiplier}`; }
+        function increaseSpeed() { typewriterSpeed = Math.max(MAX_SPEED, typewriterSpeed - SPEED_STEP); console.log("打字速度加快:", typewriterSpeed); updateSpeedDisplay(); playSFX('click'); }
+        function decreaseSpeed() { typewriterSpeed = Math.min(MIN_SPEED, typewriterSpeed + SPEED_STEP); console.log("打字速度減慢:", typewriterSpeed); updateSpeedDisplay(); playSFX('click'); }
+
+        // --- 存檔/讀檔函數 (包含日夜) ---
+        function saveGame() { if (!chosenCharacter || !currentStoryNodeId) { alert("尚未開始遊戲或處於無法儲存的狀態。"); playSFX('ui_close'); return; } const voiceNameToSave = selectedVoice ? selectedVoice.name : null; const saveData = { chosenCharacterId: chosenCharacter.id, currentChapter: currentChapter, currentStoryNodeId: currentStoryNodeId, collectedClues: collectedClues, gameState: gameState, currentTimeOfDay: currentTimeOfDay, currentVolume: currentVolume, isMuted: isMuted, typewriterSpeed: typewriterSpeed, selectedVoiceName: voiceNameToSave, currentTtsRate: currentTtsRate, currentTtsPitch: currentTtsPitch, currentObjectiveText: currentObjective.textContent, storyDisplayHTML: storyDisplay.innerHTML }; try { localStorage.setItem(SAVE_GAME_KEY, JSON.stringify(saveData)); console.log("遊戲已儲存:", saveData); alert("遊戲進度已儲存！💾"); playSFX('confirm'); } catch (error) { console.error("儲存遊戲失敗:", error); alert("儲存遊戲失敗，可能是儲存空間已滿。"); playSFX('ui_close'); } }
+        async function loadGame() { const savedDataString = localStorage.getItem(SAVE_GAME_KEY); if (!savedDataString) { alert("找不到存檔記錄。"); playSFX('ui_close'); return; } try { const savedData = JSON.parse(savedDataString); console.log("讀取存檔:", savedData); chosenCharacter = characters[savedData.chosenCharacterId]; currentChapter = savedData.currentChapter ?? 1; currentStoryNodeId = savedData.currentStoryNodeId; collectedClues = savedData.collectedClues || []; gameState = savedData.gameState || {}; currentTimeOfDay = savedData.currentTimeOfDay || 'day'; if (!chosenCharacter || !currentStoryNodeId) { throw new Error("存檔資料缺少必要的角色或節點 ID。"); } currentVolume = savedData.currentVolume ?? 0.5; isMuted = savedData.isMuted ?? false; typewriterSpeed = savedData.typewriterSpeed ?? BASE_TYPEWRITER_SPEED; currentTtsRate = savedData.currentTtsRate ?? 1; currentTtsPitch = savedData.currentTtsPitch ?? 1; const savedVoiceName = savedData.selectedVoiceName; if (savedVoiceName) { selectedVoice = availableVoices.find(v => v.name === savedVoiceName); if (!selectedVoice) { console.warn(`讀檔時找不到語音: ${savedVoiceName}，將在列表更新後嘗試同步。`); } else { console.log("讀檔時成功找到語音:", selectedVoice.name); } } else { selectedVoice = null; } playerAvatarGame.src = chosenCharacter.avatar; playerAvatarGame.onerror = () => { playerAvatarGame.src = 'https://placehold.co/100x100/cccccc/ffffff?text=?'; }; playerNameGame.innerHTML = highlightKeywords(chosenCharacter.name); currentObjective.textContent = savedData.currentObjectiveText || '目標: 推進劇情'; updateNotebook(); syncAudioControls(); updateSpeedDisplay(); if (!isAudioInitialized) { console.log("讀檔時音訊未初始化，嘗試啟動..."); const audioReady = await initializeAudio(); if (!audioReady) { console.warn("讀檔後嘗試初始化音訊失敗。音效/語音可能無法運作。"); alert("音訊初始化失敗，音效和語音朗讀可能無法使用。請嘗試重新整理頁面或檢查瀏覽器設定。"); } else { console.log("讀檔後成功初始化音訊。"); setVolume(currentVolume); if (Tone.Destination) Tone.Destination.mute = isMuted; } } else { console.log("讀檔時音訊已初始化，應用設定..."); setVolume(currentVolume); if (Tone.Destination) Tone.Destination.mute = isMuted; } if (savedData.storyDisplayHTML) { storyDisplay.innerHTML = savedData.storyDisplayHTML; storyDisplay.scrollTop = storyDisplay.scrollHeight; } else { storyDisplay.innerHTML = ''; } const node = story[currentStoryNodeId]; if (node) { showScreen('game-screen'); choicesDisplay.innerHTML = ''; displayChoices(node); } else { throw new Error(`讀檔失敗：找不到存檔的故事節點 ID: ${currentStoryNodeId}`); } playSFX('confirm'); alert("遊戲進度已載入！"); } catch (error) { console.error("讀取遊戲失敗:", error); alert(`讀取遊戲失敗：${error.message}\n存檔可能已損壞或與當前版本不符，將被清除。`); localStorage.removeItem(SAVE_GAME_KEY); loadGameButton.classList.add('hidden'); showScreen('start-screen'); playSFX('ui_close'); } }
+
+        // --- 事件監聽器 ---
+        startGameButton.addEventListener('click', async () => { console.log("開始遊戲按鈕被點擊。"); if (typeof Tone === 'undefined' || typeof speechSynthesis === 'undefined') { console.error("錯誤：Tone.js 或 SpeechSynthesis 未能在按鈕點擊時載入！"); alert("無法初始化音訊系統，請檢查網路連線或瀏覽器設定。"); return; } populateCharacterSelection(); showScreen('character-select-screen'); const audioReady = await initializeAudio(); if (audioReady) { console.log("[Audio] Context started successfully via button click."); playSFX('confirm'); populateVoiceList(); if ('speechSynthesis' in window && speechSynthesis.onvoiceschanged !== undefined) { speechSynthesis.onvoiceschanged = populateVoiceList; } } else { console.warn("[Audio] Context failed to start via button click. Audio/TTS may not work."); alert("音訊初始化失敗，音效和語音朗讀可能無法使用。請嘗試重新整理頁面或檢查瀏覽器設定。"); } });
+        restartButton.addEventListener('click', () => { playSFX('click'); if (localStorage.getItem(SAVE_GAME_KEY)) { if (confirm("重新開始將會清除之前的存檔，確定嗎？")) { localStorage.removeItem(SAVE_GAME_KEY); loadGameButton.classList.add('hidden'); console.log("存檔已清除。"); } else { return; } } showScreen('start-screen'); currentChapter = 0; currentStoryNodeId = null; chosenCharacter = null; collectedClues = []; gameState = {}; currentTimeOfDay = 'day'; selectedCharacterIdTemp = null; storyDisplay.innerHTML = ''; choicesDisplay.innerHTML = ''; updateNotebook(); typewriterSpeed = BASE_TYPEWRITER_SPEED; updateSpeedDisplay(); if ('speechSynthesis' in window) { speechSynthesis.cancel(); isSpeechPaused = false; } });
+        notebookButton.addEventListener('click', openNotebook);
+        openSettingsButton.addEventListener('click', openSettings);
+        saveGameButton.addEventListener('click', saveGame);
+        loadGameButton.addEventListener('click', loadGame);
+        settingsVolumeSlider.addEventListener('input', (event) => setVolume(event.target.value));
+        settingsMuteButton.addEventListener('click', toggleMute);
+        settingsSpeedUpButton.addEventListener('click', increaseSpeed);
+        settingsSpeedDownButton.addEventListener('click', decreaseSpeed);
+        settingsTtsVoiceSelect.addEventListener('change', (event) => { const selectedOption = event.target.options[event.target.selectedIndex]; if (selectedOption && !selectedOption.disabled) { const voiceName = selectedOption.getAttribute('data-name'); selectedVoice = availableVoices.find(voice => voice.name === voiceName); console.log("選擇的語音:", selectedVoice ? selectedVoice.name : 'None'); syncVoiceSelection(); if ((speechSynthesis.speaking || speechSynthesis.paused) && currentUtterance && lastSpokenText && lastSpeakButton) { console.log("語音變更，重新朗讀..."); speakText(lastSpokenText, lastSpeakButton); lastSpeakButton.classList.remove('paused'); lastSpeakButton.classList.add('speaking'); lastSpeakButton.innerHTML = '🔊'; } } });
+        settingsTtsRateSlider.addEventListener('input', (event) => { currentTtsRate = parseFloat(event.target.value); console.log("語速調整為:", currentTtsRate); syncRateSelection(); if ((speechSynthesis.speaking || speechSynthesis.paused) && currentUtterance && lastSpokenText && lastSpeakButton) { console.log("語速變更，重新朗讀..."); speakText(lastSpokenText, lastSpeakButton); lastSpeakButton.classList.remove('paused'); lastSpeakButton.classList.add('speaking'); lastSpeakButton.innerHTML = '🔊'; } });
+        settingsTtsPitchSlider.addEventListener('input', (event) => { currentTtsPitch = parseFloat(event.target.value); console.log("音高調整為:", currentTtsPitch); syncPitchSelection(); if ((speechSynthesis.speaking || speechSynthesis.paused) && currentUtterance && lastSpokenText && lastSpeakButton) { console.log("音高變更，重新朗讀..."); speakText(lastSpokenText, lastSpeakButton); lastSpeakButton.classList.remove('paused'); lastSpeakButton.classList.add('speaking'); lastSpeakButton.innerHTML = '🔊'; } });
+
+        // --- 初始設定和載入 ---
+        showScreen('start-screen');
+        if (localStorage.getItem(SAVE_GAME_KEY)) { loadGameButton.classList.remove('hidden'); } else { loadGameButton.classList.add('hidden'); }
+        syncAudioControls(); updateSpeedDisplay();
+        populateVoiceList();
+        if ('speechSynthesis' in window && speechSynthesis.onvoiceschanged !== undefined) { speechSynthesis.onvoiceschanged = populateVoiceList; }
+
+        // **修改：Modal 背景點擊關閉**
+        window.onclick = function(event) {
+             if (event.target == notebookModal) closeNotebook();
+             if (event.target == settingsModal) closeSettings();
+        }
+
+    </script>
+</body>
+</html>
